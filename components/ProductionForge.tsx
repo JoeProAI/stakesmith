@@ -37,12 +37,17 @@ export default function ProductionForge() {
     try {
       // Step 1: Fetch live odds
       const oddsRes = await fetch('/api/odds');
-      if (!oddsRes.ok) throw new Error('Failed to fetch odds');
       const oddsData = await oddsRes.json();
       
-      if (!oddsData.events || oddsData.events.length === 0) {
-        throw new Error('No live games available');
+      if (!oddsRes.ok) {
+        throw new Error(oddsData.error || oddsData.details || 'Failed to fetch odds');
       }
+      
+      if (!oddsData.events || oddsData.events.length === 0) {
+        throw new Error('No upcoming NFL games available. Check back during the NFL season (September-February).');
+      }
+      
+      console.log(`Fetched ${oddsData.events.length} upcoming NFL games`);
 
       // Step 2: Generate AI analysis with Grok
       const aiRes = await fetch('/api/forge', {

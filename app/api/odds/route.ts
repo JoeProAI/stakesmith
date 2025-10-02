@@ -4,24 +4,47 @@ import { getCache } from '@/lib/kv';
 
 export async function GET() {
   const cache = getCache();
-  const key = 'odds:dk:60s';
+  const key = 'odds:dk:30s';
+  
   if (cache) {
-    const cached =
-      // @ts-ignore
-      await ('get' in cache ? (cache as any).get(key) : (cache as any).get(key));
-    if (cached)
-      return new Response(JSON.stringify(cached), { headers: { 'content-type': 'application/json' } });
-  }
-  try {
-    const data = await fetchDraftKingsOdds();
-    if (cache) {
-      // @ts-ignore
-      'set' in cache
-        ? await (cache as any).set(key, data, { ex: 60 })
-        : await (cache as any).set(key, data, 'EX', 60);
+    try {
+      const cached = await cache.get(key);
+      if (cached) {
+        return new Response(JSON.stringify({ events: cached, cached: true }), { 
+          headers: { 'content-type': 'application/json' } 
+        });
+      }
+    } catch (cacheError) {
+      console.error('Cache read error:', cacheError);
     }
-    return new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
+  }
+  
+  try {
+    const events = await fetchDraftKingsOdds();
+    
+    if (cache) {
+      try {
+        await cache.set(key, events, { ex: 30 });
+      } catch (cacheError) {
+        console.error('Cache write error:', cacheError);
+      }
+    }
+    
+    return new Response(JSON.stringify({ events, cached: false, count: events.length }), { 
+      headers: { 
+        'content-type': 'application/json',
+        'cache-control': 'public, s-maxage=30, stale-while-revalidate=60'
+      } 
+    });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 502 });
+    console.error('Odds fetch error:', e);
+    return new Response(
+      JSON.stringify({ 
+        error: e.message,
+        events: [],
+        details: 'Failed to fetch live odds. Check API key configuration.'
+      }), 
+      { status: 500, headers: { 'content-type': 'application/json' } }
+    );
   }
 }
