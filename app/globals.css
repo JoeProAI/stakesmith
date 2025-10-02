@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --bg: oklch(20% 0.03 250);
+  --card: oklch(24% 0.03 250);
+  --accent: oklch(65% 0.07 240);
+}
+
+html,
+body {
+  background: var(--bg);
+}
+
+.card {
+  background: linear-gradient(180deg, var(--card), oklch(18% 0.02 250));
+  border: 1px solid oklch(30% 0.02 250 / 0.5);
+}
+
+.btn-carbon {
+  background-image: radial-gradient(
+      circle at 10px 10px,
+      rgba(255, 255, 255, 0.06) 2px,
+      transparent 0
+    ),
+    radial-gradient(circle at 30px 30px, rgba(0, 0, 0, 0.4) 2px, transparent 0);
+  background-size: 20px 20px;
+}
