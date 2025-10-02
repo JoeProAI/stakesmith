@@ -1,8 +1,15 @@
-import { kv } from '@vercel/kv';
-import Redis from 'ioredis';
-
+// Only import Vercel KV (works with Edge runtime)
+// ioredis is removed to avoid Edge runtime compatibility issues
 export function getCache() {
-  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) return kv;
-  if (process.env.REDIS_URL) return new Redis(process.env.REDIS_URL);
+  // Vercel KV is Edge-compatible, only use if configured
+  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    // Dynamically import to avoid issues when not configured
+    try {
+      const { kv } = require('@vercel/kv');
+      return kv;
+    } catch {
+      return null;
+    }
+  }
   return null;
 }
