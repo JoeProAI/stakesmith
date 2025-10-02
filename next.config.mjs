@@ -2,7 +2,7 @@ import withPWA from 'next-pwa';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-export default withPWA({
+const nextConfig = {
   experimental: {
     optimizePackageImports: ['react', '@tanstack/react-query', 'framer-motion']
   },
@@ -10,9 +10,10 @@ export default withPWA({
     remotePatterns: [{ protocol: 'https', hostname: 'a.espncdn.com' }]
   },
   poweredByHeader: false,
-  reactStrictMode: true,
-  pwa: {
-    dest: 'public',
-    disable: isDev
-  }
-});
+  reactStrictMode: true
+};
+
+export default withPWA({
+  dest: 'public',
+  disable: isDev
+})(nextConfig);
