@@ -1,19 +1,4 @@
 {
-  "functions": {
-    "app/api/daytona/**": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 60
-    },
-    "app/api/webhooks/github/**": {
-      "runtime": "nodejs20.x"
-    },
-    "app/api/export/**": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 60
-    },
-    "app/api/**": {
-      "runtime": "edge"
-    }
-  }
+  "buildCommand": "npm run build",
+  "framework": "nextjs"
 }
