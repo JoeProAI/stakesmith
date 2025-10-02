@@ -16,10 +16,10 @@ export default function Home() {
             Input bankroll + risk, get interactive parlays and EV sims tied to live odds.
           </p>
           <div className="mt-6 flex gap-3">
-            <Link href="/(app)/forge" className="btn-carbon rounded px-4 py-2">
+            <Link href="/forge" className="btn-carbon rounded px-4 py-2">
               Open Forge
             </Link>
-            <Link href="/(app)/dashboard" className="rounded px-4 py-2 bg-[var(--accent)]">
+            <Link href="/dashboard" className="rounded px-4 py-2 bg-[var(--accent)]">
               Dashboard
             </Link>
           </div>
