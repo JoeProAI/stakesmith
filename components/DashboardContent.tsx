@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 type SavedBlueprint = {
@@ -15,35 +16,63 @@ type SavedBlueprint = {
 
 export default function DashboardContent() {
   const [user, setUser] = useState(auth.currentUser);
-  const [blueprints, setBlueprints] = useState<SavedBlueprint[]>([
-    {
-      id: '1',
-      name: 'Week 15 Upset Special',
-      date: '2025-02-01',
-      bankroll: 1000,
-      legs: 4,
-      payout: 8.5,
-      status: 'pending'
-    },
-    {
-      id: '2',
-      name: 'Safe Sunday Stack',
-      date: '2025-01-28',
-      bankroll: 500,
-      legs: 3,
-      payout: 3.2,
-      status: 'won'
-    }
-  ]);
-  const [bankroll, setBankroll] = useState(5000);
-  const [profit, setProfit] = useState(850);
+  const [blueprints, setBlueprints] = useState<SavedBlueprint[]>([]);
+  const [bankroll, setBankroll] = useState(0);
+  const [profit, setProfit] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setUser(user);
+      if (user) {
+        await loadUserData(user.uid);
+      }
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
+  const loadUserData = async (userId: string) => {
+    try {
+      // Fetch user blueprints from Firestore
+      const blueprintsRef = collection(db, 'blueprints');
+      const q = query(
+        blueprintsRef,
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      
+      const userBlueprints = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as SavedBlueprint[];
+      
+      setBlueprints(userBlueprints);
+
+      // Fetch user profile for bankroll
+      const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', userId)));
+      if (!userDoc.empty) {
+        const userData = userDoc.docs[0].data();
+        setBankroll(userData.bankroll || 1000);
+        setProfit(userData.totalProfit || 0);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      // Set default values if error
+      setBankroll(1000);
+      setProfit(0);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full mx-auto"></div>
+        <p className="text-neutral-400 mt-4">Loading your data...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -110,8 +139,23 @@ export default function DashboardContent() {
           </button>
         </div>
 
-        <div className="space-y-3">
-          {blueprints.map((bp, idx) => (
+        {blueprints.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-4xl mb-3">📋</div>
+            <h4 className="text-lg font-semibold mb-2">No Blueprints Yet</h4>
+            <p className="text-neutral-400 text-sm mb-4">
+              Head to the Forge to create your first AI-powered parlay blueprint
+            </p>
+            <a
+              href="/forge"
+              className="inline-block bg-[var(--accent)] px-6 py-2 rounded-lg hover:opacity-90"
+            >
+              ⚒️ Create Blueprint
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {blueprints.map((bp, idx) => (
             <motion.div
               key={bp.id}
               initial={{ opacity: 0, x: -20 }}
@@ -142,7 +186,8 @@ export default function DashboardContent() {
               </div>
             </motion.div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -167,19 +212,27 @@ export default function DashboardContent() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-neutral-400">Win Rate:</span>
-              <span className="font-semibold">67.5%</span>
+              <span className="font-semibold">
+                {blueprints.length > 0
+                  ? `${((blueprints.filter(b => b.status === 'won').length / blueprints.filter(b => b.status !== 'pending').length) * 100 || 0).toFixed(1)}%`
+                  : 'N/A'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-neutral-400">Avg. Payout:</span>
-              <span className="font-semibold">4.2x</span>
+              <span className="font-semibold">
+                {blueprints.length > 0
+                  ? `${(blueprints.reduce((sum, b) => sum + b.payout, 0) / blueprints.length).toFixed(1)}x`
+                  : 'N/A'}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-neutral-400">Best Streak:</span>
-              <span className="font-semibold">8 wins</span>
+              <span className="text-neutral-400">Active Bets:</span>
+              <span className="font-semibold">{blueprints.filter(b => b.status === 'pending').length}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-neutral-400">Total Bets:</span>
-              <span className="font-semibold">42</span>
+              <span className="font-semibold">{blueprints.length}</span>
             </div>
           </div>
         </div>
