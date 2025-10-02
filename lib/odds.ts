@@ -12,7 +12,8 @@ export type OddsEvent = {
 };
 
 export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
-  const api = process.env.ODDS_API_KEY!;
+  const api = process.env.ODDS_API_KEY || '';
+  if (!api) throw new Error('ODDS_API_KEY not configured');
   const url =
     'https://api.the-odds-api.com/v4/sports/americanfootball_nfl/odds?regions=us&oddsFormat=american&bookmakers=draftkings&markets=h2h,spreads,totals';
   const r = await fetch(`${url}&apiKey=${api}`, { next: { revalidate: 60 } });

@@ -3,11 +3,13 @@ import OpenAI from 'openai';
 const xaiBase = 'https://api.x.ai/v1/chat/completions';
 
 export async function grokContrarian(prompt: string) {
+  const apiKey = process.env.XAI_API_KEY || '';
+  if (!apiKey) throw new Error('XAI_API_KEY not configured');
   const r = await fetch(xaiBase, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.XAI_API_KEY}`
+      Authorization: `Bearer ${apiKey}`
     },
     body: JSON.stringify({
       model: 'grok-2-latest',
@@ -25,7 +27,7 @@ export async function grokContrarian(prompt: string) {
   return j.choices?.[0]?.message?.content ?? '';
 }
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'placeholder' });
 
 export async function gptSimulateEV(payload: any) {
   const res = await openai.chat.completions.create({

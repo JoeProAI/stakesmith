@@ -5,11 +5,14 @@ export async function spawnSandbox({
   repoUrl: string;
   branch?: string;
 }) {
-  const r = await fetch(`${process.env.DAYTONA_API_BASE}/sandboxes`, {
+  const apiBase = process.env.DAYTONA_API_BASE || 'https://api.daytona.io';
+  const apiKey = process.env.DAYTONA_API_KEY || '';
+  if (!apiKey) throw new Error('DAYTONA_API_KEY not configured');
+  const r = await fetch(`${apiBase}/sandboxes`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.DAYTONA_API_KEY}`
+      Authorization: `Bearer ${apiKey}`
     },
     body: JSON.stringify({
       source: { type: 'git', url: repoUrl, branch },
