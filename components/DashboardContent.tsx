@@ -54,7 +54,7 @@ export default function DashboardContent() {
             Sign in with Google to save blueprints and track your bankroll
           </p>
           <div className="text-sm text-neutral-500">
-            Use the "Sign In with Google" button in the header
+            Use the &quot;Sign In with Google&quot; button in the header
           </div>
         </div>
       </div>
