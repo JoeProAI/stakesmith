@@ -16,11 +16,8 @@ export default function Header() {
           <Link href="/dashboard" className="text-sm hover:text-[var(--accent)]">
             Dashboard
           </Link>
-          <Link href="/duels" className="text-sm hover:text-[var(--accent)]">
-            Duels
-          </Link>
-          <Link href="/history" className="text-sm hover:text-[var(--accent)]">
-            History
+          <Link href="/pricing" className="text-sm font-semibold text-[var(--accent)] hover:opacity-80">
+            💎 Upgrade
           </Link>
           <AuthButton />
         </nav>

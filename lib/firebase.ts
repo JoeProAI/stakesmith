@@ -1,10 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInAnonymously
-} from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -13,19 +8,19 @@ const cfg = {
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || ''
 };
 
-const app = getApps().length ? getApps()[0] : initializeApp(cfg);
-
+export const app = !getApps().length ? initializeApp(cfg) : getApps()[0]!;
 export const auth = getAuth(app);
-export const google = new GoogleAuthProvider();
+
+// Fix: Set persistence to prevent sign-in from disappearing
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error('Auth persistence error:', error);
+  });
+}
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
-export async function signInGoogle() {
-  await signInWithPopup(auth, google);
-}
-export async function anonEntry() {
-  await signInAnonymously(auth);
-}

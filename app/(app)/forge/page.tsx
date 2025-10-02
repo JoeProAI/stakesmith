@@ -1,4 +1,4 @@
-import EnhancedForge from '@/components/EnhancedForge';
+import ProductionForge from '@/components/ProductionForge';
 
 export default function Forge() {
   return (
@@ -6,10 +6,10 @@ export default function Forge() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">⚒️ Forge Workshop</h1>
         <p className="text-neutral-400 mt-2">
-          Generate AI-powered NFL parlay blueprints with live odds and EV analysis
+          Generate AI-powered NFL parlay blueprints with live odds and detailed reasoning
         </p>
       </div>
-      <EnhancedForge />
+      <ProductionForge />
     </main>
   );
 }
