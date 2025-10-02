@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 export default function Legal() {
   return (
     <main className="p-6 prose prose-invert">

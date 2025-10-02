@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import NFLHeatmap from '@/components/NFLHeatmap';
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   return (
     <main className="mx-auto max-w-7xl p-6">
