@@ -1,12 +1,15 @@
-import AIChat from '@/components/AIChat';
-import ForgeCanvas from '@/components/ForgeCanvas';
+import EnhancedForge from '@/components/EnhancedForge';
 
 export default function Forge() {
   return (
-    <main className="p-6 space-y-4">
-      <h2 className="text-2xl font-semibold">Forge Workshop</h2>
-      <ForgeCanvas />
-      <AIChat />
+    <main className="mx-auto max-w-7xl p-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">⚒️ Forge Workshop</h1>
+        <p className="text-neutral-400 mt-2">
+          Generate AI-powered NFL parlay blueprints with live odds and EV analysis
+        </p>
+      </div>
+      <EnhancedForge />
     </main>
   );
 }
