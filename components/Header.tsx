@@ -16,8 +16,8 @@ export default function Header() {
           <Link href="/dashboard" className="text-sm hover:text-[var(--accent)]">
             Dashboard
           </Link>
-          <Link href="/pricing" className="text-sm font-semibold text-[var(--accent)] hover:opacity-80">
-            💎 Upgrade
+          <Link href="/subscribe" className="text-sm font-semibold bg-gradient-to-r from-[var(--accent)] to-purple-600 px-4 py-2 rounded-lg hover:opacity-90">
+            💎 Subscribe
           </Link>
           <AuthButton />
         </nav>

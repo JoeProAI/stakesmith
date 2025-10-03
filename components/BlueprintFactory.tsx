@@ -47,9 +47,11 @@ const strategies = [
 
 export default function BlueprintFactory() {
   const [bankroll, setBankroll] = useState(100);
+  const [riskLevel, setRiskLevel] = useState<'conservative' | 'moderate' | 'aggressive'>('moderate');
   const [generating, setGenerating] = useState(false);
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
+  const [savedBlueprints, setSavedBlueprints] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -68,6 +70,9 @@ export default function BlueprintFactory() {
     setGenerating(true);
     setBlueprints([]);
 
+    // Apply risk level multiplier
+    const riskMultiplier = riskLevel === 'conservative' ? 0.5 : riskLevel === 'aggressive' ? 1.5 : 1;
+
     // Filter strategies by minimum bankroll and calculate stakes
     const viableStrategies = strategies.filter(s => bankroll >= s.minBankroll);
     
@@ -79,7 +84,7 @@ export default function BlueprintFactory() {
 
     // Initialize all blueprints as "generating"
     const initialBlueprints = viableStrategies.map((s, idx) => {
-      const calculatedStake = Math.max(1, Math.floor(bankroll * s.risk * 100) / 100); // Min $1, round to cents
+      const calculatedStake = Math.max(1, Math.floor(bankroll * s.risk * riskMultiplier * 100) / 100); // Min $1, round to cents
       return {
         id: `bp-${idx}`,
         strategy: s.name,
@@ -121,7 +126,7 @@ export default function BlueprintFactory() {
 
       // Generate all blueprints concurrently
       const promises = viableStrategies.map(async (strategy, idx) => {
-        const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * 100) / 100);
+        const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * riskMultiplier * 100) / 100);
         try {
           const aiRes = await fetch('/api/forge', {
             method: 'POST',
@@ -132,7 +137,8 @@ export default function BlueprintFactory() {
 Strategy: ${strategy.description}
 Focus: ${strategy.focus}
 Bankroll: $${bankroll}
-Stake: $${calculatedStake.toFixed(2)} (${(strategy.risk * 100)}% of bankroll)
+Risk Level: ${riskLevel}
+Stake: $${calculatedStake.toFixed(2)} (${(strategy.risk * riskMultiplier * 100).toFixed(1)}% of bankroll)
 
 Available games and ALL markets (including player props for top games):
 ${JSON.stringify(allOdds, null, 2)}
@@ -310,8 +316,108 @@ Return ONLY valid JSON:
     }
   };
 
+  const saveBlueprint = async (blueprint: Blueprint) => {
+    if (!user) return;
+    
+    try {
+      await addDoc(collection(db, 'blueprints'), {
+        userId: user.uid,
+        name: blueprint.strategy,
+        strategy: blueprint.strategy,
+        bets: blueprint.bets,
+        totalOdds: blueprint.totalOdds,
+        ev: blueprint.ev,
+        winProb: blueprint.winProb,
+        stake: blueprint.stake,
+        potentialWin: blueprint.potentialWin,
+        aiReasoning: blueprint.aiReasoning,
+        status: 'pending',
+        bankroll: bankroll,
+        legs: blueprint.bets.length,
+        payout: blueprint.totalOdds,
+        date: new Date().toISOString(),
+        createdAt: new Date()
+      });
+      
+      setSavedBlueprints([...savedBlueprints, blueprint.id]);
+      alert(`${blueprint.strategy} saved to dashboard!`);
+    } catch (error) {
+      alert('Failed to save blueprint');
+    }
+  };
+
+  const regenerateBlueprint = async (strategyIndex: number) => {
+    // Regenerate a single blueprint
+    const strategy = strategies[strategyIndex];
+    const blueprintId = `bp-${strategyIndex}`;
+    
+    // Mark as generating
+    setBlueprints(prev => prev.map(bp => 
+      bp.id === blueprintId ? { ...bp, status: 'generating' as const } : bp
+    ));
+
+    try {
+      const oddsRes = await fetch('/api/odds');
+      const oddsData = await oddsRes.json();
+      
+      const detailedOddsPromises = oddsData.events.slice(0, 5).map((event: any) => 
+        fetch(`/api/odds/${event.id}`).then(res => res.ok ? res.json() : null)
+      );
+      const detailedOdds = (await Promise.all(detailedOddsPromises)).filter(Boolean);
+      const allOdds = [...detailedOdds, ...oddsData.events.slice(5, 15)];
+
+      const riskMult = riskLevel === 'conservative' ? 0.5 : riskLevel === 'aggressive' ? 1.5 : 1;
+      const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * riskMult * 100) / 100);
+      
+      const aiRes = await fetch('/api/forge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `You are an expert NFL bettor. Analyze these games and create a ${strategy.name} parlay blueprint.
+
+Strategy: ${strategy.description}
+Focus: ${strategy.focus}
+Bankroll: $${bankroll}
+Risk Level: ${riskLevel}
+Stake: $${calculatedStake.toFixed(2)}
+
+Available games: ${JSON.stringify(allOdds, null, 2)}
+
+Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedValue.`,
+          model: strategyIndex % 2 === 0 ? 'grok' : 'gpt4o'
+        })
+      });
+
+      const aiData = await aiRes.json();
+      const jsonMatch = aiData.text.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      const totalOdds = parsed.bets.reduce((acc: number, bet: BetLeg) => {
+        const decimal = bet.odds >= 100 ? 1 + bet.odds / 100 : 1 + 100 / Math.abs(bet.odds);
+        return acc * decimal;
+      }, 1);
+
+      const newBlueprint = {
+        id: blueprintId,
+        strategy: strategy.name,
+        description: strategy.description,
+        bets: parsed.bets,
+        totalOdds,
+        ev: parsed.expectedValue,
+        winProb: parsed.winProbability,
+        stake: calculatedStake,
+        potentialWin: calculatedStake * totalOdds,
+        aiReasoning: parsed.overallStrategy,
+        status: 'ready' as const
+      };
+
+      setBlueprints(prev => prev.map(bp => bp.id === blueprintId ? newBlueprint : bp));
+    } catch (error) {
+      alert('Failed to regenerate blueprint');
+    }
+  };
+
   const testInDaytona = async (blueprint: Blueprint) => {
-    // Daytona integration - create sandbox to backtest this blueprint
     try {
       const res = await fetch('/api/daytona/test', {
         method: 'POST',
@@ -322,7 +428,6 @@ Return ONLY valid JSON:
       const data = await res.json();
       window.open(data.sandboxUrl, '_blank');
     } catch (error) {
-      console.error('Daytona error:', error);
       alert('Daytona testing coming soon!');
     }
   };
@@ -351,6 +456,52 @@ Return ONLY valid JSON:
               className="w-full"
               disabled={generating}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm text-neutral-400 mb-2">
+              Risk Level
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => setRiskLevel('conservative')}
+                disabled={generating}
+                className={`py-2 px-4 rounded-lg font-semibold transition-colors ${
+                  riskLevel === 'conservative' 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                }`}
+              >
+                🛡️ Conservative
+              </button>
+              <button
+                onClick={() => setRiskLevel('moderate')}
+                disabled={generating}
+                className={`py-2 px-4 rounded-lg font-semibold transition-colors ${
+                  riskLevel === 'moderate' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                }`}
+              >
+                ⚖️ Moderate
+              </button>
+              <button
+                onClick={() => setRiskLevel('aggressive')}
+                disabled={generating}
+                className={`py-2 px-4 rounded-lg font-semibold transition-colors ${
+                  riskLevel === 'aggressive' 
+                    ? 'bg-red-600 text-white' 
+                    : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                }`}
+              >
+                🔥 Aggressive
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500 mt-2">
+              {riskLevel === 'conservative' && '50% stake reduction - safer bets'}
+              {riskLevel === 'moderate' && 'Standard stake sizing - balanced approach'}
+              {riskLevel === 'aggressive' && '50% stake increase - higher risk/reward'}
+            </p>
           </div>
 
           <button
@@ -456,11 +607,34 @@ Return ONLY valid JSON:
                     >
                       📋 View Full
                     </button>
+                    {savedBlueprints.includes(bp.id) ? (
+                      <button
+                        disabled
+                        className="text-xs bg-green-600/50 py-2 rounded cursor-not-allowed"
+                      >
+                        ✓ Saved
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => saveBlueprint(bp)}
+                        className="text-xs bg-green-600 py-2 rounded hover:bg-green-700"
+                      >
+                        💾 Save
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <button
+                      onClick={() => regenerateBlueprint(idx)}
+                      className="text-xs bg-orange-600 py-2 rounded hover:bg-orange-700"
+                    >
+                      🔄 Regenerate
+                    </button>
                     <button
                       onClick={() => testInDaytona(bp)}
                       className="text-xs bg-purple-600 py-2 rounded hover:bg-purple-700"
                     >
-                      🧪 Test in Daytona
+                      🧪 Daytona
                     </button>
                   </div>
                 </>
