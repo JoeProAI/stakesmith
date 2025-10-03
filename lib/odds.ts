@@ -25,12 +25,12 @@ export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
   }
   
   try {
-    // Fetch ALL upcoming NFL games (not just live)
+    // Fetch ALL upcoming NFL games with ALL markets including player props
     const url = 'https://api.the-odds-api.com/v4/sports/americanfootball_nfl/odds';
     const params = new URLSearchParams({
       apiKey: api,
       regions: 'us',
-      markets: 'h2h,spreads,totals',
+      markets: 'h2h,spreads,totals,player_pass_tds,player_pass_yds,player_rush_yds,player_receptions,alternate_spreads,alternate_totals',
       oddsFormat: 'american',
       bookmakers: 'draftkings'
     });
@@ -58,6 +58,7 @@ export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
       throw new Error('No upcoming NFL games found. Check back later.');
     }
     
+    console.log(`Fetched ${upcomingGames.length} games with player props`);
     return upcomingGames;
   } catch (error) {
     console.error('Odds API error:', error);
