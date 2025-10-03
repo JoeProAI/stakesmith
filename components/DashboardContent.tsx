@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 type SavedBlueprint = {
@@ -115,6 +115,18 @@ export default function DashboardContent() {
         timestamp: new Date(),
         date: new Date().toISOString()
       });
+
+      // Upsert user bankroll profile
+      await setDoc(
+        doc(db, 'users', user.uid),
+        {
+          uid: user.uid,
+          bankroll: newBankroll,
+          totalProfit: profit || 0,
+          updatedAt: new Date()
+        },
+        { merge: true }
+      );
 
       // Update local state
       setBankroll(newBankroll);

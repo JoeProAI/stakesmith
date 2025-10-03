@@ -20,6 +20,7 @@ type Blueprint = {
   id: string;
   strategy: string;
   description: string;
+  icon: string;
   bets: BetLeg[];
   totalOdds: number;
   ev: number;
@@ -89,6 +90,7 @@ export default function BlueprintFactory() {
         id: `bp-${idx}`,
         strategy: s.name,
         description: s.description,
+        icon: s.icon,
         bets: [],
         totalOdds: 0,
         ev: 0,
@@ -255,6 +257,7 @@ Return ONLY valid JSON:
             id: `bp-${idx}`,
             strategy: strategy.name,
             description: strategy.description,
+            icon: strategy.icon,
             bets: parsed.bets,
             totalOdds,
             ev: parsed.expectedValue,
@@ -317,7 +320,10 @@ Return ONLY valid JSON:
   };
 
   const saveBlueprint = async (blueprint: Blueprint) => {
-    if (!user) return;
+    if (!user) {
+      alert('Please sign in to save blueprints');
+      return;
+    }
     
     try {
       await addDoc(collection(db, 'blueprints'), {
@@ -340,16 +346,17 @@ Return ONLY valid JSON:
       });
       
       setSavedBlueprints([...savedBlueprints, blueprint.id]);
-      alert(`${blueprint.strategy} saved to dashboard!`);
+      alert(`✅ ${blueprint.strategy} saved to dashboard!`);
     } catch (error) {
-      alert('Failed to save blueprint');
+      console.error('Save error:', error);
+      alert('Failed to save blueprint. Please check your connection and try again.');
     }
   };
 
-  const regenerateBlueprint = async (strategyIndex: number) => {
-    // Regenerate a single blueprint
-    const strategy = strategies[strategyIndex];
-    const blueprintId = `bp-${strategyIndex}`;
+  const regenerateBlueprint = async (blueprintId: string) => {
+    // Regenerate a single blueprint using its ID (stable even after sorting)
+    const idxFromId = Number(blueprintId.split('-')[1]);
+    const strategy = strategies[idxFromId];
     
     // Mark as generating
     setBlueprints(prev => prev.map(bp => 
@@ -384,7 +391,7 @@ Stake: $${calculatedStake.toFixed(2)}
 Available games: ${JSON.stringify(allOdds, null, 2)}
 
 Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedValue.`,
-          model: strategyIndex % 2 === 0 ? 'grok' : 'gpt4o'
+          model: idxFromId % 2 === 0 ? 'grok' : 'gpt4o'
         })
       });
 
@@ -397,10 +404,12 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         return acc * decimal;
       }, 1);
 
+      const existing = (prev => prev)([] as any); // no-op placeholder to keep context unique
       const newBlueprint = {
         id: blueprintId,
         strategy: strategy.name,
         description: strategy.description,
+        icon: strategy.icon,
         bets: parsed.bets,
         totalOdds,
         ev: parsed.expectedValue,
@@ -413,7 +422,11 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
       setBlueprints(prev => prev.map(bp => bp.id === blueprintId ? newBlueprint : bp));
     } catch (error) {
-      alert('Failed to regenerate blueprint');
+      // Restore original blueprint on error
+      setBlueprints(prev => prev.map(bp => 
+        bp.id === blueprintId ? { ...bp, status: 'ready' as const } : bp
+      ));
+      alert('Failed to regenerate blueprint. Please try again.');
     }
   };
 
@@ -546,7 +559,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h4 className="text-lg font-bold flex items-center gap-2">
-                    {strategies[idx]?.icon} {bp.strategy}
+                    {bp.icon} {bp.strategy}
                   </h4>
                   <p className="text-xs text-neutral-400">{bp.description}</p>
                 </div>
@@ -625,7 +638,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                   </div>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <button
-                      onClick={() => regenerateBlueprint(idx)}
+                      onClick={() => regenerateBlueprint(bp.id)}
                       className="text-xs bg-orange-600 py-2 rounded hover:bg-orange-700"
                     >
                       🔄 Regenerate
