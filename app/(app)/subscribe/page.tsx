@@ -63,7 +63,16 @@ export default function SubscribePage() {
 
   const handleBetaCode = async () => {
     // Validate beta code
-    const validCodes = ['BETA2025', 'STAKESMITH', 'EARLYACCESS'];
+    const validCodes = [
+      'FORGE100',
+      'BLUEPRINT50',
+      'HAMMER25',
+      'IRONBET',
+      'SMITHVIP',
+      'BETASMITH',
+      'STAKE100',
+      'FACTORY1'
+    ];
     
     if (validCodes.includes(betaCode.toUpperCase())) {
       alert('Beta code activated! You now have free access.');
