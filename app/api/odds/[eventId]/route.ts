@@ -3,10 +3,10 @@ import { fetchEventOdds } from '@/lib/odds';
 
 export async function GET(
   req: Request,
-  { params }: { params: { eventId: string } }
+  context: { params: Promise<{ eventId: string }> }
 ) {
   try {
-    const eventId = params.eventId;
+    const { eventId } = await context.params;
     const eventOdds = await fetchEventOdds(eventId);
     
     if (!eventOdds) {
@@ -23,7 +23,6 @@ export async function GET(
       } 
     });
   } catch (e: any) {
-    console.error('Event odds fetch error:', e);
     return new Response(
       JSON.stringify({ 
         error: e.message,

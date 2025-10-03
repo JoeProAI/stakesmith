@@ -60,10 +60,8 @@ export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
       throw new Error('No upcoming NFL games found. Check back later.');
     }
     
-    console.log(`Fetched ${upcomingGames.length} NFL games with h2h, spreads, totals`);
     return upcomingGames;
   } catch (error) {
-    console.error('Odds API error:', error);
     throw error;
   }
 }
@@ -116,15 +114,12 @@ export async function fetchEventOdds(eventId: string): Promise<OddsEvent | null>
     });
     
     if (!response.ok) {
-      console.error(`Failed to fetch event ${eventId} odds`);
       return null;
     }
     
     const data = await response.json() as OddsEvent;
-    console.log(`Fetched detailed odds for event ${eventId} with ${data.bookmakers?.[0]?.markets?.length || 0} markets`);
     return data;
   } catch (error) {
-    console.error(`Error fetching event ${eventId} odds:`, error);
     return null;
   }
 }
