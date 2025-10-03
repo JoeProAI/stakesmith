@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 type SavedBlueprint = {
@@ -54,26 +54,28 @@ export default function DashboardContent() {
       const q = query(
         blueprintsRef,
         where('userId', '==', userId)
-        // Note: orderBy requires a Firestore index. Add it in Firebase Console if needed.
-        // For now, we'll sort client-side
       );
       const snapshot = await getDocs(q);
-      
       const userBlueprints = (snapshot.docs
         .map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as SavedBlueprint[])
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      
+
       setBlueprints(userBlueprints);
 
-      // Fetch user profile for bankroll
-      const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', userId)));
-      if (!userDoc.empty) {
-        const userData = userDoc.docs[0].data();
-        setBankroll(userData.bankroll || 1000);
-        setProfit(userData.totalProfit || 0);
+      // Fetch user profile for bankroll using doc id = uid
+      const userRef = doc(db, 'users', userId);
+      const profileSnap = await getDoc(userRef);
+      if (profileSnap.exists()) {
+        const userData = profileSnap.data() as any;
+        setBankroll(userData.bankroll ?? 1000);
+        setProfit(userData.totalProfit ?? 0);
+      } else {
+        // Initialize defaults
+        setBankroll(1000);
+        setProfit(0);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
