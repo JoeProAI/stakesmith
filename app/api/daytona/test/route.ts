@@ -17,6 +17,27 @@ export async function POST(req: NextRequest) {
     }
 
     // Create Daytona sandbox with blueprint testing environment
+    const pythonScript = [
+      'import json',
+      'import os',
+      'import random',
+      '',
+      'blueprint = json.loads(os.environ["BLUEPRINT_DATA"])',
+      'print("Testing Strategy:", blueprint["strategy"])',
+      '',
+      'for i, bet in enumerate(blueprint["bets"], 1):',
+      '    print(f"Leg {i}: {bet["description"]}")',
+      '    print(f"  Odds: {bet["odds"]}")',
+      '',
+      'print(f"Total Payout: {blueprint["totalOdds"]:.2f}x")',
+      'print(f"Stake: ${blueprint["stake"]:.2f}")',
+      '',
+      'random.seed(42)',
+      'simulations = 10000',
+      'wins = sum(1 for _ in range(simulations) if random.random() < blueprint["winProb"])',
+      'print(f"Win Rate: {wins/simulations*100:.1f}%")'
+    ].join('\n');
+
     const sandboxConfig = {
       name: `stakesmith-${blueprint.strategy.toLowerCase().replace(/\s+/g, '-')}`,
       image: 'python:3.11-slim',
@@ -27,48 +48,7 @@ export async function POST(req: NextRequest) {
       files: [
         {
           path: '/workspace/test_blueprint.py',
-          content: `
-import json
-import os
-
-# Load blueprint
-blueprint = json.loads(os.environ['BLUEPRINT_DATA'])
-
-print("=" * 50)
-print(f"Testing Strategy: {blueprint['strategy']}")
-print("=" * 50)
-
-for i, bet in enumerate(blueprint['bets'], 1):
-    print(f"\\nLeg {i}: {bet['description']}")
-    print(f"  Odds: {bet['odds']}")
-    print(f"  EV: +{bet['ev']*100:.1f}%")
-    print(f"  Reasoning: {bet['reasoning']}")
-
-print(f"\\n{'=' * 50}")
-print(f"Total Payout: {blueprint['totalOdds']:.2f}x")
-print(f"Win Probability: {blueprint['winProb']*100:.1f}%")
-print(f"Expected Value: +{blueprint['ev']*100:.1f}%")
-print(f"Stake: ${blueprint['stake']:.2f}")
-print(f"Potential Win: ${blueprint['potentialWin']:.2f}")
-print("=" * 50)
-
-# Run Monte Carlo simulation
-import random
-random.seed(42)
-
-simulations = 10000
-wins = 0
-
-for _ in range(simulations):
-    if random.random() < blueprint['winProb']:
-        wins += 1
-
-actual_win_rate = wins / simulations
-print(f"\\nMonte Carlo Simulation ({simulations:,} iterations):")
-print(f"  Expected: {blueprint['winProb']*100:.1f}%")
-print(f"  Actual: {actual_win_rate*100:.1f}%")
-print(f"  Variance: {abs(actual_win_rate - blueprint['winProb'])*100:.2f}%")
-          `
+          content: pythonScript
         }
       ],
       command: 'python /workspace/test_blueprint.py'
