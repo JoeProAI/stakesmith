@@ -43,7 +43,11 @@ const strategies = [
   { name: 'First Half Specialist', risk: 0.05, minBankroll: 20, description: '1H spreads, totals, ML', icon: '⏱️', focus: 'first_half' },
   { name: 'Totals Hunter', risk: 0.05, minBankroll: 20, description: 'Overs/unders with weather analysis', icon: '📊', focus: 'totals' },
   { name: 'AI Contrarian', risk: 0.06, minBankroll: 20, description: 'Fade the public, find value', icon: '🤖', focus: 'contrarian' },
-  { name: 'Line Shopping Master', risk: 0.03, minBankroll: 35, description: 'Best available lines across books', icon: '⚡', focus: 'arbitrage' }
+  { name: 'Line Shopping Master', risk: 0.03, minBankroll: 35, description: 'Best available lines across books', icon: '⚡', focus: 'arbitrage' },
+  // High-payout options
+  { name: 'Power Parlay', risk: 0.12, minBankroll: 50, description: '5-7 legs, mixed ML + props targeting 10x-50x', icon: '💥', focus: 'power_parlay' },
+  { name: 'Longshot Ladder', risk: 0.15, minBankroll: 75, description: 'Progressive longshots stacked for 100x+ ceiling', icon: '🪜', focus: 'longshot' },
+  { name: 'VIP High Stakes', risk: 0.20, minBankroll: 100, description: 'Premium data picks with bigger stakes for 20x+', icon: '💎', focus: 'vip_high' }
 ];
 
 export default function BlueprintFactory() {
@@ -439,7 +443,13 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       });
       
       const data = await res.json();
-      window.open(data.sandboxUrl, '_blank');
+      if (data?.sandboxUrl) {
+        window.open(data.sandboxUrl, '_blank');
+      } else if (data?.message) {
+        alert(data.message);
+      } else {
+        alert('Daytona testing coming soon!');
+      }
     } catch (error) {
       alert('Daytona testing coming soon!');
     }
