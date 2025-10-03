@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { auth, db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import type { User } from 'firebase/auth';
 
 type BetLeg = {
   type: 'game' | 'player_prop';
@@ -49,7 +50,14 @@ export default function BlueprintFactory() {
   const [generating, setGenerating] = useState(false);
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
-  const user = auth.currentUser;
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const generateAllBlueprints = async () => {
     if (!user) {

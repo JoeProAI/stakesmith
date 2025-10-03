@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 type SavedBlueprint = {
@@ -20,6 +20,8 @@ export default function DashboardContent() {
   const [bankroll, setBankroll] = useState(0);
   const [profit, setProfit] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showFundsModal, setShowFundsModal] = useState<'add' | 'withdraw' | null>(null);
+  const [amount, setAmount] = useState('');
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -78,6 +80,51 @@ export default function DashboardContent() {
       // Set default values if error
       setBankroll(1000);
       setProfit(0);
+    }
+  };
+
+  const handleFundsTransaction = async () => {
+    if (!user || !amount || isNaN(Number(amount))) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    const transactionAmount = Number(amount);
+    if (transactionAmount <= 0) {
+      alert('Amount must be greater than 0');
+      return;
+    }
+
+    if (showFundsModal === 'withdraw' && transactionAmount > bankroll) {
+      alert('Insufficient funds');
+      return;
+    }
+
+    try {
+      const newBankroll = showFundsModal === 'add' 
+        ? bankroll + transactionAmount 
+        : bankroll - transactionAmount;
+
+      // Save transaction to Firestore
+      await addDoc(collection(db, 'transactions'), {
+        userId: user.uid,
+        type: showFundsModal,
+        amount: transactionAmount,
+        previousBankroll: bankroll,
+        newBankroll: newBankroll,
+        timestamp: new Date(),
+        date: new Date().toISOString()
+      });
+
+      // Update local state
+      setBankroll(newBankroll);
+      setAmount('');
+      setShowFundsModal(null);
+      
+      alert(`Successfully ${showFundsModal === 'add' ? 'added' : 'withdrew'} $${transactionAmount}`);
+    } catch (error) {
+      console.error('Transaction error:', error);
+      alert('Failed to process transaction');
     }
   };
 
@@ -211,15 +258,24 @@ export default function DashboardContent() {
         <div className="card p-6">
           <h4 className="font-semibold mb-3">📊 Bankroll Manager</h4>
           <div className="space-y-3">
-            <button className="w-full text-left p-3 rounded bg-black/40 hover:bg-black/60 transition-colors">
+            <button 
+              onClick={() => setShowFundsModal('add')}
+              className="w-full text-left p-3 rounded bg-green-600/20 hover:bg-green-600/40 transition-colors border border-green-600/50"
+            >
               + Add Funds
             </button>
-            <button className="w-full text-left p-3 rounded bg-black/40 hover:bg-black/60 transition-colors">
+            <button 
+              onClick={() => setShowFundsModal('withdraw')}
+              className="w-full text-left p-3 rounded bg-red-600/20 hover:bg-red-600/40 transition-colors border border-red-600/50"
+            >
               - Withdraw
             </button>
-            <button className="w-full text-left p-3 rounded bg-black/40 hover:bg-black/60 transition-colors">
-              📈 View Analytics
-            </button>
+            <a 
+              href="/history"
+              className="block w-full text-left p-3 rounded bg-black/40 hover:bg-black/60 transition-colors"
+            >
+              📈 View History
+            </a>
           </div>
         </div>
 
@@ -253,6 +309,72 @@ export default function DashboardContent() {
           </div>
         </div>
       </div>
+
+      {/* Funds Transaction Modal */}
+      {showFundsModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur flex items-center justify-center z-50 p-4" onClick={() => setShowFundsModal(null)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="card p-6 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">
+                {showFundsModal === 'add' ? '💰 Add Funds' : '💸 Withdraw Funds'}
+              </h3>
+              <button onClick={() => setShowFundsModal(null)} className="text-2xl hover:text-red-400">×</button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm text-neutral-400 mb-2">Amount ($)</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+                className="w-full bg-black/40 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:border-[var(--accent)] focus:outline-none"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div className="mb-4 p-3 bg-black/40 rounded-lg">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-neutral-400">Current Bankroll:</span>
+                <span className="font-semibold">${bankroll.toLocaleString()}</span>
+              </div>
+              {amount && !isNaN(Number(amount)) && Number(amount) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-neutral-400">New Bankroll:</span>
+                  <span className={`font-semibold ${showFundsModal === 'add' ? 'text-green-400' : 'text-red-400'}`}>
+                    ${(showFundsModal === 'add' ? bankroll + Number(amount) : bankroll - Number(amount)).toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowFundsModal(null)}
+                className="flex-1 bg-neutral-700 py-3 rounded-lg hover:bg-neutral-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleFundsTransaction}
+                className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${
+                  showFundsModal === 'add' 
+                    ? 'bg-green-600 hover:bg-green-700' 
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                {showFundsModal === 'add' ? 'Add' : 'Withdraw'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
