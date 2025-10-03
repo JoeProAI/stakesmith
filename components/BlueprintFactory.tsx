@@ -110,6 +110,15 @@ export default function BlueprintFactory() {
         throw new Error('No upcoming NFL games found. The season may be over or on break.');
       }
 
+      // Fetch detailed odds for top 5 games (includes player props and all markets)
+      const detailedOddsPromises = oddsData.events.slice(0, 5).map((event: any) => 
+        fetch(`/api/odds/${event.id}`).then(res => res.ok ? res.json() : null)
+      );
+      const detailedOdds = (await Promise.all(detailedOddsPromises)).filter(Boolean);
+
+      // Combine basic and detailed odds
+      const allOdds = [...detailedOdds, ...oddsData.events.slice(5, 15)];
+
       // Generate all blueprints concurrently
       const promises = viableStrategies.map(async (strategy, idx) => {
         const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * 100) / 100);
@@ -125,8 +134,8 @@ Focus: ${strategy.focus}
 Bankroll: $${bankroll}
 Stake: $${calculatedStake.toFixed(2)} (${(strategy.risk * 100)}% of bankroll)
 
-Available games and ALL markets:
-${JSON.stringify(oddsData.events.slice(0, 15), null, 2)}
+Available games and ALL markets (including player props for top games):
+${JSON.stringify(allOdds, null, 2)}
 
 STRATEGY-SPECIFIC REQUIREMENTS:
 
