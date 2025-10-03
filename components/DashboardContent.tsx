@@ -25,11 +25,24 @@ export default function DashboardContent() {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setUser(user);
       if (user) {
-        await loadUserData(user.uid);
+        try {
+          await loadUserData(user.uid);
+        } catch (error) {
+          console.error('Failed to load user data:', error);
+        }
       }
       setLoading(false);
     });
-    return () => unsubscribe();
+
+    // Failsafe: Stop loading after 5 seconds
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const loadUserData = async (userId: string) => {
@@ -38,15 +51,18 @@ export default function DashboardContent() {
       const blueprintsRef = collection(db, 'blueprints');
       const q = query(
         blueprintsRef,
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
+        // Note: orderBy requires a Firestore index. Add it in Firebase Console if needed.
+        // For now, we'll sort client-side
       );
       const snapshot = await getDocs(q);
       
-      const userBlueprints = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as SavedBlueprint[];
+      const userBlueprints = (snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as SavedBlueprint[])
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
       setBlueprints(userBlueprints);
 

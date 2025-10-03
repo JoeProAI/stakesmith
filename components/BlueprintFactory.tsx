@@ -30,12 +30,18 @@ type Blueprint = {
 };
 
 const strategies = [
-  { name: 'Safe Money', risk: 0.02, minBankroll: 50, description: 'Favorites only, low variance', icon: '🛡️' },
-  { name: 'Balanced Attack', risk: 0.05, minBankroll: 20, description: 'Mix of favorites & value plays', icon: '⚖️' },
-  { name: 'High Roller', risk: 0.10, minBankroll: 10, description: 'Aggressive underdogs, high upside', icon: '🎲' },
-  { name: 'Player Props Special', risk: 0.04, minBankroll: 25, description: 'TD scorers, yards, receptions', icon: '🏈' },
-  { name: 'AI Contrarian', risk: 0.06, minBankroll: 20, description: 'Against public, find value', icon: '🤖' },
-  { name: 'Live Arbitrage', risk: 0.03, minBankroll: 35, description: 'Line movement opportunities', icon: '⚡' }
+  { name: 'Safe Money', risk: 0.02, minBankroll: 50, description: 'Favorites ML + conservative spreads', icon: '🛡️', focus: 'favorites' },
+  { name: 'Balanced Attack', risk: 0.05, minBankroll: 20, description: 'Mix of spreads, totals, and value plays', icon: '⚖️', focus: 'balanced' },
+  { name: 'High Roller', risk: 0.10, minBankroll: 10, description: 'Aggressive underdogs, long odds', icon: '🎲', focus: 'underdogs' },
+  { name: 'QB Props Master', risk: 0.04, minBankroll: 25, description: 'Passing yards, TDs, completions', icon: '🎯', focus: 'qb_props' },
+  { name: 'RB Rushing Plays', risk: 0.04, minBankroll: 25, description: 'Rushing yards, TDs, attempts', icon: '🏃', focus: 'rb_props' },
+  { name: 'WR Reception Targets', risk: 0.04, minBankroll: 25, description: 'Receptions, yards, TD catches', icon: '🙌', focus: 'wr_props' },
+  { name: 'Alternate Lines Value', risk: 0.06, minBankroll: 20, description: 'Alt spreads & totals with better odds', icon: '↕️', focus: 'alternates' },
+  { name: 'Same Game Parlay', risk: 0.07, minBankroll: 15, description: 'Multiple bets from single game', icon: '🎪', focus: 'sgp' },
+  { name: 'First Half Specialist', risk: 0.05, minBankroll: 20, description: '1H spreads, totals, ML', icon: '⏱️', focus: 'first_half' },
+  { name: 'Totals Hunter', risk: 0.05, minBankroll: 20, description: 'Overs/unders with weather analysis', icon: '📊', focus: 'totals' },
+  { name: 'AI Contrarian', risk: 0.06, minBankroll: 20, description: 'Fade the public, find value', icon: '🤖', focus: 'contrarian' },
+  { name: 'Line Shopping Master', risk: 0.03, minBankroll: 35, description: 'Best available lines across books', icon: '⚡', focus: 'arbitrage' }
 ];
 
 export default function BlueprintFactory() {
@@ -88,8 +94,12 @@ export default function BlueprintFactory() {
       const oddsRes = await fetch('/api/odds');
       const oddsData = await oddsRes.json();
 
-      if (!oddsRes.ok || !oddsData.events?.length) {
-        throw new Error('No games available');
+      if (!oddsRes.ok) {
+        throw new Error(oddsData.error || oddsData.details || 'Failed to fetch odds. Check environment variables in Vercel.');
+      }
+
+      if (!oddsData.events || oddsData.events.length === 0) {
+        throw new Error('No upcoming NFL games found. The season may be over or on break.');
       }
 
       // Generate all blueprints concurrently
@@ -103,19 +113,81 @@ export default function BlueprintFactory() {
               prompt: `You are an expert NFL bettor. Analyze these games and create a ${strategy.name} parlay blueprint.
 
 Strategy: ${strategy.description}
+Focus: ${strategy.focus}
 Bankroll: $${bankroll}
 Stake: $${calculatedStake.toFixed(2)} (${(strategy.risk * 100)}% of bankroll)
 
-Available games and markets (including player props):
+Available games and ALL markets:
 ${JSON.stringify(oddsData.events.slice(0, 15), null, 2)}
 
-Requirements:
-1. Select 3-6 bets based on strategy
-2. Include player props if strategy calls for it (TDs, yards, receptions)
-3. Focus ONLY on bets with positive expected value (EV > 0)
-4. Provide detailed reasoning for EACH pick
-5. Calculate realistic win probability
-6. Explain overall strategy
+STRATEGY-SPECIFIC REQUIREMENTS:
+
+${strategy.focus === 'favorites' ? `
+- Only pick favorites (negative ML) or small spreads
+- Avoid underdogs entirely
+- Focus on teams with >60% implied win probability
+` : ''}
+
+${strategy.focus === 'underdogs' ? `
+- Target underdogs with +150 to +400 odds
+- Include at least 2 underdog MLs
+- Look for upset opportunities
+` : ''}
+
+${strategy.focus === 'qb_props' ? `
+- ONLY quarterback props: passing yards, passing TDs, completions, interceptions
+- Include 4-5 QB prop bets
+- Consider weather, matchups, pace of play
+- Examples: "Mahomes Over 275.5 Pass Yds", "Allen 2+ Pass TDs"
+` : ''}
+
+${strategy.focus === 'rb_props' ? `
+- ONLY running back props: rushing yards, rushing TDs, attempts
+- Include 4-5 RB prop bets
+- Consider defensive rankings, game script
+- Examples: "Henry Over 85.5 Rush Yds", "CMC Anytime TD"
+` : ''}
+
+${strategy.focus === 'wr_props' ? `
+- ONLY wide receiver props: receptions, receiving yards, receiving TDs
+- Include 4-5 WR prop bets
+- Consider target share, cornerback matchups
+- Examples: "Jefferson Over 6.5 Receptions", "Hill 80+ Rec Yds"
+` : ''}
+
+${strategy.focus === 'alternates' ? `
+- Use alternate spreads and totals for better odds
+- Examples: "Chiefs -10.5 (+150)", "Game Total Over 52.5 (-150)"
+- Exploit line value
+` : ''}
+
+${strategy.focus === 'sgp' ? `
+- All bets from ONE GAME only
+- Mix game outcome + player props
+- Example: "Chiefs ML + Mahomes 2+ TDs + Kelce 50+ Rec Yds"
+` : ''}
+
+${strategy.focus === 'first_half' ? `
+- ONLY first half markets: 1H spread, 1H total, 1H ML
+- Focus on fast-starting teams
+- Examples: "Cowboys 1H -3.5", "1H Over 24.5"
+` : ''}
+
+${strategy.focus === 'totals' ? `
+- ONLY over/under bets
+- Consider weather (wind, rain, cold = under, dome = over)
+- Pace of play, offensive/defensive rankings
+- Examples: "Bills vs Dolphins Over 48.5", "Patriots vs Jets Under 37.5"
+` : ''}
+
+GENERAL REQUIREMENTS:
+1. Select 3-6 bets following the strategy focus
+2. ONLY bets with positive EV (EV > 5%)
+3. Provide detailed 2-3 sentence reasoning for EACH pick with stats
+4. Calculate realistic win probability
+5. Include player names for props
+
+Return ONLY valid JSON:
 
 Return ONLY valid JSON:
 {
@@ -244,7 +316,7 @@ Return ONLY valid JSON:
       <div className="card p-6">
         <h3 className="text-2xl font-bold mb-4">⚒️ Blueprint Factory</h3>
         <p className="text-neutral-400 mb-6">
-          Generate 6 different betting strategies simultaneously. AI analyzes live odds, player props, and finds the highest EV opportunities.
+          Generate 12 different betting strategies simultaneously covering game lines, QB props, RB props, WR props, alternate lines, same game parlays, first half, totals, and more. AI analyzes live odds and player props to find the highest EV opportunities.
         </p>
 
         <div className="space-y-4">
@@ -269,12 +341,12 @@ Return ONLY valid JSON:
             disabled={generating || !user}
             className="w-full bg-gradient-to-r from-[var(--accent)] to-purple-600 py-4 rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {generating ? '⚒️ Forging 6 Blueprints...' : !user ? '🔒 Sign In to Generate' : '⚒️ Generate All Strategies'}
+            {generating ? `⚒️ Forging ${strategies.filter(s => bankroll >= s.minBankroll).length} Blueprints...` : !user ? '🔒 Sign In to Generate' : `⚒️ Generate All Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}
           </button>
 
           {generating && (
             <div className="text-center text-sm text-neutral-400">
-              Using dual AI (Grok + GPT-4o) to analyze {strategies.length} strategies with player props...
+              Using dual AI (Grok + GPT-4o) to analyze game lines, QB/RB/WR props, alternate lines, SGPs, first half, totals...
             </div>
           )}
         </div>
