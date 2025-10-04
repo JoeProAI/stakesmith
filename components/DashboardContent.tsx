@@ -174,11 +174,14 @@ export default function DashboardContent() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card p-6"
+          className="card p-6 border-[var(--accent)]/30 hover:border-[var(--accent)] transition-all relative overflow-hidden group"
         >
-          <div className="text-sm text-neutral-400">Current Bankroll</div>
-          <div className="text-3xl font-bold text-[var(--accent)] mt-2">
-            ${bankroll.toLocaleString()}
+          <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="relative z-10">
+            <div className="text-sm text-[var(--text-secondary)] uppercase tracking-wide">Current Bankroll</div>
+            <div className="text-3xl font-bold text-[var(--accent)] mt-2 group-hover:text-[var(--accent-glow)] transition-colors">
+              ${bankroll.toLocaleString()}
+            </div>
           </div>
         </motion.div>
 
@@ -186,11 +189,14 @@ export default function DashboardContent() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="card p-6"
+          className={`card p-6 transition-all relative overflow-hidden group ${profit >= 0 ? 'border-[var(--success)]/30 hover:border-[var(--success)]' : 'border-[var(--danger)]/30 hover:border-[var(--danger)]'}`}
         >
-          <div className="text-sm text-neutral-400">Total Profit/Loss</div>
-          <div className={`text-3xl font-bold mt-2 ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {profit >= 0 ? '+' : ''}${profit.toLocaleString()}
+          <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity ${profit >= 0 ? 'from-[var(--success)]/10' : 'from-[var(--danger)]/10'} to-transparent`}></div>
+          <div className="relative z-10">
+            <div className="text-sm text-[var(--text-secondary)] uppercase tracking-wide">Total Profit/Loss</div>
+            <div className={`text-3xl font-bold mt-2 ${profit >= 0 ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
+              {profit >= 0 ? '+' : ''}${profit.toLocaleString()}
+            </div>
           </div>
         </motion.div>
 
@@ -198,11 +204,14 @@ export default function DashboardContent() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="card p-6"
+          className="card p-6 border-purple-500/30 hover:border-purple-500 transition-all relative overflow-hidden group"
         >
-          <div className="text-sm text-neutral-400">Active Blueprints</div>
-          <div className="text-3xl font-bold mt-2">
-            {blueprints.filter(b => b.status === 'pending').length}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="relative z-10">
+            <div className="text-sm text-[var(--text-secondary)] uppercase tracking-wide">Active Strategies</div>
+            <div className="text-3xl font-bold mt-2 text-purple-400 group-hover:text-purple-300 transition-colors">
+              {blueprints.filter(b => b.status === 'pending').length}
+            </div>
           </div>
         </motion.div>
       </div>

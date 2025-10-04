@@ -6,6 +6,7 @@
   --bg: #0a0a0f;
   --card: #13131a;
   --accent: #4a9eff;
+  --accent-glow: #6bb3ff;
   --border: #252530;
   --text-primary: #f0f0f5;
   --text-secondary: #9696a8;
@@ -16,28 +17,63 @@
 
 html,
 body {
-  background: var(--bg);
+  background: radial-gradient(ellipse at top, #0f0f1a 0%, #0a0a0f 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
 }
 
-/* Sharp, professional cards */
+/* Sharp, styled cards with depth */
 .card {
-  background: var(--card);
+  background: linear-gradient(135deg, rgba(19, 19, 26, 0.95) 0%, rgba(13, 13, 18, 0.98) 100%);
   border: 1px solid var(--border);
   border-radius: 0;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  position: relative;
 }
 
-/* Clean button base */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Premium button base */
 .btn-carbon {
   background: linear-gradient(135deg, #1a1a24 0%, #13131a 100%);
   border: 1px solid var(--border);
   border-radius: 0;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-carbon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.1) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.btn-carbon:hover::before {
+  opacity: 1;
 }
 
 .btn-carbon:hover {
   background: linear-gradient(135deg, #252530 0%, #1a1a24 100%);
   border-color: var(--accent);
+  box-shadow: 
+    0 4px 16px rgba(74, 158, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
 }
 
 /* Remove all default rounded corners */
@@ -45,26 +81,64 @@ body {
   border-radius: 0 !important;
 }
 
-/* Sharp focus states */
+/* Sharp focus states with glow */
 *:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+  box-shadow: 0 0 16px rgba(74, 158, 255, 0.3);
 }
 
-/* Professional scrollbar */
+/* Styled scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
   background: var(--bg);
+  border-left: 1px solid var(--border);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: linear-gradient(180deg, var(--border) 0%, rgba(37, 37, 48, 0.5) 100%);
+  border-left: 1px solid rgba(74, 158, 255, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background: linear-gradient(180deg, var(--accent) 0%, rgba(74, 158, 255, 0.6) 100%);
+  box-shadow: 0 0 8px rgba(74, 158, 255, 0.5);
+}
+
+/* Accent glow effect */
+.glow-accent {
+  box-shadow: 0 0 20px rgba(74, 158, 255, 0.4);
+}
+
+/* Grid pattern background */
+.grid-bg {
+  background-image: 
+    linear-gradient(rgba(74, 158, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 158, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Shimmer effect for loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
 }

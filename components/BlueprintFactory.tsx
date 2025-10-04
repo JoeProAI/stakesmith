@@ -529,9 +529,10 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
           <button
             onClick={generateAllBlueprints}
             disabled={generating || !user}
-            className="w-full bg-[var(--accent)] text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--accent)]/90 transition-all"
+            className="w-full bg-gradient-to-r from-[var(--accent)] to-purple-500 text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-[var(--accent)]/40 transition-all relative overflow-hidden group"
           >
-            {generating ? `Generating ${strategies.filter(s => bankroll >= s.minBankroll).length} Strategies...` : !user ? 'Sign In Required' : `Generate Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}
+            <span className="relative z-10">{generating ? `Generating ${strategies.filter(s => bankroll >= s.minBankroll).length} Strategies...` : !user ? 'Sign In Required' : `Generate Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}</span>
+            {!generating && <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"></div>}
           </button>
 
           {generating && (
@@ -551,14 +552,14 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: idx * 0.1 }}
-              className={`card p-5 relative ${
-                bp.ev > 0.1 ? 'ring-2 ring-green-400' : bp.ev < 0 ? 'opacity-60' : ''
+              className={`card p-5 relative hover:border-[var(--accent)] transition-all group ${
+                bp.ev > 0.1 ? 'border-[var(--success)]/50 shadow-lg shadow-[var(--success)]/20' : bp.ev < 0 ? 'opacity-60' : ''
               }`}
             >
               {/* EV Badge */}
               {bp.status === 'ready' && (
-                <div className={`absolute -top-3 -right-3 px-3 py-1 rounded-full text-xs font-bold ${
-                  bp.ev > 0.1 ? 'bg-green-400 text-black' : bp.ev > 0 ? 'bg-yellow-400 text-black' : 'bg-red-400 text-white'
+                <div className={`absolute -top-3 -right-3 px-3 py-1 text-xs font-bold shadow-lg ${
+                  bp.ev > 0.1 ? 'bg-[var(--success)] text-black shadow-[var(--success)]/40' : bp.ev > 0 ? 'bg-[var(--warning)] text-black shadow-[var(--warning)]/40' : 'bg-[var(--danger)] text-white shadow-[var(--danger)]/40'
                 }`}>
                   {bp.ev > 0 ? '+' : ''}{(bp.ev * 100).toFixed(1)}% EV
                 </div>
@@ -568,10 +569,10 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="px-2 py-1 bg-[var(--accent)]/10 border border-[var(--accent)]/30 text-[var(--accent)] text-xs font-mono">
+                    <div className="px-2 py-1 bg-gradient-to-br from-[var(--accent)]/20 to-purple-500/20 border border-[var(--accent)]/50 text-[var(--accent)] text-xs font-mono font-bold shadow-inner">
                       {bp.icon}
                     </div>
-                    <h4 className="text-base font-semibold text-[var(--text-primary)]">
+                    <h4 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-glow)] transition-colors">
                       {bp.strategy}
                     </h4>
                   </div>
@@ -588,33 +589,33 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                 <>
                   {/* Stats */}
                   <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-                    <div className="bg-black/30 p-2 rounded">
-                      <div className="text-xs text-neutral-400">Payout</div>
+                    <div className="bg-gradient-to-br from-[var(--accent)]/5 to-transparent p-2 border border-[var(--border)]">
+                      <div className="text-xs text-[var(--text-secondary)]">Payout</div>
                       <div className="font-bold text-[var(--accent)]">{bp.totalOdds.toFixed(2)}x</div>
                     </div>
-                    <div className="bg-black/30 p-2 rounded">
-                      <div className="text-xs text-neutral-400">Win %</div>
-                      <div className="font-bold">{(bp.winProb * 100).toFixed(0)}%</div>
+                    <div className="bg-gradient-to-br from-purple-500/5 to-transparent p-2 border border-[var(--border)]">
+                      <div className="text-xs text-[var(--text-secondary)]">Win %</div>
+                      <div className="font-bold text-[var(--text-primary)]">{(bp.winProb * 100).toFixed(0)}%</div>
                     </div>
-                    <div className="bg-black/30 p-2 rounded">
-                      <div className="text-xs text-neutral-400">Stake</div>
-                      <div className="font-bold">${bp.stake.toFixed(0)}</div>
+                    <div className="bg-gradient-to-br from-[var(--warning)]/5 to-transparent p-2 border border-[var(--border)]">
+                      <div className="text-xs text-[var(--text-secondary)]">Stake</div>
+                      <div className="font-bold text-[var(--warning)]">${bp.stake.toFixed(0)}</div>
                     </div>
-                    <div className="bg-black/30 p-2 rounded">
-                      <div className="text-xs text-neutral-400">To Win</div>
-                      <div className="font-bold text-green-400">${bp.potentialWin.toFixed(0)}</div>
+                    <div className="bg-gradient-to-br from-[var(--success)]/5 to-transparent p-2 border border-[var(--border)]">
+                      <div className="text-xs text-[var(--text-secondary)]">To Win</div>
+                      <div className="font-bold text-[var(--success)]">${bp.potentialWin.toFixed(0)}</div>
                     </div>
                   </div>
 
                   {/* Bets Preview */}
                   <div className="space-y-1 mb-3 text-xs">
                     {bp.bets.slice(0, 3).map((bet, betIdx) => (
-                      <div key={betIdx} className="flex items-center justify-between bg-black/20 p-2 rounded">
-                        <span className="truncate flex-1">
-                          {bet.type === 'player_prop' && '🏈 '}
+                      <div key={betIdx} className="flex items-center justify-between bg-gradient-to-r from-black/30 to-transparent p-2 border-l-2 border-[var(--accent)]/30">
+                        <span className="truncate flex-1 text-[var(--text-secondary)]">
+                          {bet.type === 'player_prop' && <span className="text-[var(--accent)] mr-1">[P]</span>}
                           {bet.description}
                         </span>
-                        <span className="font-mono font-semibold ml-2">
+                        <span className="font-mono font-semibold ml-2 text-[var(--text-primary)]">
                           {bet.odds > 0 ? '+' : ''}{bet.odds}
                         </span>
                       </div>
