@@ -287,32 +287,7 @@ Return ONLY valid JSON:
       const sorted = results.sort((a, b) => b.ev - a.ev);
       setBlueprints(sorted);
 
-      // Auto-save top 3 blueprints to Firestore
-      const topThree = sorted.slice(0, 3).filter(bp => bp.ev > 0);
-      for (const bp of topThree) {
-        try {
-          await addDoc(collection(db, 'blueprints'), {
-            userId: user.uid,
-            name: bp.strategy,
-            strategy: bp.strategy,
-            bets: bp.bets,
-            totalOdds: bp.totalOdds,
-            ev: bp.ev,
-            winProb: bp.winProb,
-            stake: bp.stake,
-            potentialWin: bp.potentialWin,
-            aiReasoning: bp.aiReasoning,
-            status: 'pending',
-            bankroll: bankroll,
-            legs: bp.bets.length,
-            payout: bp.totalOdds,
-            date: new Date().toISOString(),
-            createdAt: new Date()
-          });
-        } catch (saveError) {
-          console.error('Error saving blueprint:', saveError);
-        }
-      }
+      // Removed auto-save - user chooses what to save via Save button
 
     } catch (error) {
       console.error('Factory error:', error);
@@ -361,14 +336,16 @@ Return ONLY valid JSON:
     const idxFromId = Number(blueprintId.split('-')[1]);
     const strategy = strategies[idxFromId];
     
-    // Store original blueprint for restoration on error
+    // CRITICAL: Deep clone the original blueprint to preserve all data
     const originalBlueprint = blueprints.find(bp => bp.id === blueprintId);
     if (!originalBlueprint) {
       console.error('Blueprint not found:', blueprintId);
       return;
     }
     
+    const originalClone = JSON.parse(JSON.stringify(originalBlueprint));
     console.log('Regenerating blueprint:', blueprintId, strategy.name);
+    console.log('Original preserved:', originalClone);
     
     // Mark as generating
     setBlueprints(prev => prev.map(bp => 
@@ -450,9 +427,10 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       setBlueprints(prev => prev.map(bp => bp.id === blueprintId ? newBlueprint : bp));
     } catch (error) {
       console.error('Regenerate error:', error);
-      // Restore full original blueprint on error
+      // Restore DEEP CLONED original blueprint on error
+      console.log('Restoring original:', originalClone);
       setBlueprints(prev => prev.map(bp => 
-        bp.id === blueprintId ? { ...originalBlueprint, status: 'ready' as const } : bp
+        bp.id === blueprintId ? { ...originalClone, status: 'ready' as const } : bp
       ));
       alert(`Failed to regenerate ${strategy.name}. ${error instanceof Error ? error.message : 'Please try again.'}`);
     }
@@ -613,12 +591,14 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
               {bp.status === 'generating' ? (
                 <div className="py-8 text-center">
-                  <div className="relative w-12 h-12 mx-auto mb-3">
-                    <div className="absolute inset-0 border-2 border-[var(--accent)]/30 loading-pulse"></div>
-                    <div className="absolute inset-2 border-2 border-[var(--accent)]/60 loading-pulse" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="absolute inset-4 bg-[var(--accent)] loading-dot"></div>
+                  <div className="relative w-16 h-16 mx-auto mb-3">
+                    {/* Chip stack animation */}
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-3 bg-[var(--accent)] chip-stack-anim" style={{ animationDelay: '0s' }}></div>
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-3 bg-[var(--accent)]/80 chip-stack-anim" style={{ animationDelay: '0.3s' }}></div>
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-3 bg-[var(--accent)]/60 chip-stack-anim" style={{ animationDelay: '0.6s' }}></div>
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-3 bg-[var(--accent)]/40 chip-stack-anim" style={{ animationDelay: '0.9s' }}></div>
                   </div>
-                  <p className="text-sm text-[var(--text-secondary)]">Analyzing...</p>
+                  <p className="text-sm text-[var(--text-secondary)] mt-4">Analyzing odds...</p>
                 </div>
               ) : (
                 <>

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 type SavedBlueprint = {
@@ -22,6 +22,8 @@ export default function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [showFundsModal, setShowFundsModal] = useState<'add' | 'withdraw' | null>(null);
   const [amount, setAmount] = useState('');
+  const [editingStake, setEditingStake] = useState<string | null>(null);
+  const [newStake, setNewStake] = useState<string>('');
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -182,13 +184,59 @@ export default function DashboardContent() {
     }
   };
 
+  const deleteBlueprint = async (blueprintId: string, blueprintName: string) => {
+    if (!confirm(`Delete "${blueprintName}"?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      console.log('Deleting blueprint:', blueprintId);
+      await deleteDoc(doc(db, 'blueprints', blueprintId));
+      
+      // Update local state
+      setBlueprints(prev => prev.filter(bp => bp.id !== blueprintId));
+      console.log('✓ Blueprint deleted');
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Failed to delete blueprint');
+    }
+  };
+
+  const updateBlueprintStake = async (blueprintId: string, stake: number, payout: number) => {
+    try {
+      console.log('Updating stake for:', blueprintId, 'to', stake);
+      
+      const potentialWin = stake * payout;
+      
+      await updateDoc(doc(db, 'blueprints', blueprintId), {
+        stake: stake,
+        bankroll: stake,
+        potentialWin: potentialWin
+      });
+      
+      // Update local state
+      setBlueprints(prev => prev.map(bp => 
+        bp.id === blueprintId ? { ...bp, bankroll: stake } : bp
+      ));
+      
+      setEditingStake(null);
+      setNewStake('');
+      console.log('✓ Stake updated');
+    } catch (error) {
+      console.error('Update stake error:', error);
+      alert('Failed to update stake');
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="relative w-16 h-16 mx-auto mb-4">
-          <div className="absolute inset-0 border-2 border-[var(--accent)]/30 loading-pulse"></div>
-          <div className="absolute inset-2 border-2 border-[var(--accent)]/60 loading-pulse" style={{ animationDelay: '0.2s' }}></div>
-          <div className="absolute inset-4 bg-[var(--accent)] loading-dot"></div>
+        <div className="relative w-20 h-20 mx-auto mb-4">
+          {/* Chip stacking animation */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-[var(--accent)] chip-stack-anim" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-[var(--accent)]/80 chip-stack-anim" style={{ animationDelay: '0.3s' }}></div>
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-[var(--accent)]/60 chip-stack-anim" style={{ animationDelay: '0.6s' }}></div>
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-[var(--accent)]/40 chip-stack-anim" style={{ animationDelay: '0.9s' }}></div>
         </div>
         <p className="text-[var(--text-secondary)] mt-4">Loading your data...</p>
       </div>
@@ -295,26 +343,65 @@ export default function DashboardContent() {
               transition={{ delay: idx * 0.1 }}
               className="flex items-center justify-between p-4 rounded border border-neutral-700 bg-black/30 hover:border-[var(--accent)] transition-colors cursor-pointer"
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-1">
                 <div
-                  className={`w-3 h-3 rounded-full ${
+                  className={`w-3 h-3 ${
                     bp.status === 'pending'
-                      ? 'bg-yellow-400'
+                      ? 'bg-[var(--warning)]'
                       : bp.status === 'won'
-                      ? 'bg-green-400'
-                      : 'bg-red-400'
+                      ? 'bg-[var(--success)]'
+                      : 'bg-[var(--danger)]'
                   }`}
                 />
-                <div>
-                  <div className="font-semibold">{bp.name}</div>
-                  <div className="text-xs text-neutral-400">
-                    {bp.legs} legs • ${bp.bankroll} stake • {new Date(bp.date).toLocaleDateString()}
+                <div className="flex-1">
+                  <div className="font-semibold text-[var(--text-primary)]">{bp.name}</div>
+                  <div className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
+                    {bp.legs} legs • 
+                    {editingStake === bp.id ? (
+                      <div className="flex items-center gap-1">
+                        $<input 
+                          type="number" 
+                          value={newStake}
+                          onChange={(e) => setNewStake(e.target.value)}
+                          className="w-20 px-1 py-0.5 bg-[var(--card)] border border-[var(--accent)] text-xs"
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => updateBlueprintStake(bp.id, Number(newStake), bp.payout)}
+                          className="text-[var(--success)] hover:text-[var(--success)]/80 text-xs px-1"
+                        >
+                          ✓
+                        </button>
+                        <button 
+                          onClick={() => { setEditingStake(null); setNewStake(''); }}
+                          className="text-[var(--danger)] hover:text-[var(--danger)]/80 text-xs px-1"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => { setEditingStake(bp.id); setNewStake(bp.bankroll.toString()); }}
+                        className="hover:text-[var(--accent)] cursor-pointer"
+                      >
+                        ${bp.bankroll} stake
+                      </button>
+                    )}
+                    • {new Date(bp.date).toLocaleDateString()}
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="font-bold text-[var(--accent)]">{bp.payout}x</div>
-                <div className="text-xs text-neutral-400 capitalize">{bp.status}</div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="font-bold text-[var(--accent)]">{bp.payout}x</div>
+                  <div className="text-xs text-[var(--text-secondary)]">${(bp.bankroll * bp.payout).toFixed(0)} to win</div>
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); deleteBlueprint(bp.id, bp.name); }}
+                  className="px-3 py-1 text-sm border border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition-all"
+                >
+                  Delete
+                </button>
               </div>
             </motion.div>
           ))}
