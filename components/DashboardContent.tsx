@@ -102,25 +102,33 @@ export default function DashboardContent() {
       return;
     }
 
+    const transactionType = showFundsModal;
+
     try {
-      const newBankroll = showFundsModal === 'add' 
+      console.log('Starting transaction:', { transactionType, transactionAmount, currentBankroll: bankroll });
+
+      const newBankroll = transactionType === 'add' 
         ? bankroll + transactionAmount 
         : bankroll - transactionAmount;
 
+      console.log('New bankroll will be:', newBankroll);
+
       // Save transaction to Firestore
-      await addDoc(collection(db, 'transactions'), {
+      const transactionRef = await addDoc(collection(db, 'transactions'), {
         userId: user.uid,
-        type: showFundsModal,
+        type: transactionType,
         amount: transactionAmount,
         previousBankroll: bankroll,
         newBankroll: newBankroll,
         timestamp: new Date(),
         date: new Date().toISOString()
       });
+      console.log('Transaction saved:', transactionRef.id);
 
       // Upsert user bankroll profile
+      const userRef = doc(db, 'users', user.uid);
       await setDoc(
-        doc(db, 'users', user.uid),
+        userRef,
         {
           uid: user.uid,
           bankroll: newBankroll,
@@ -129,24 +137,29 @@ export default function DashboardContent() {
         },
         { merge: true }
       );
+      console.log('User profile updated');
 
       // Update local state
       setBankroll(newBankroll);
       setAmount('');
       setShowFundsModal(null);
       
-      alert(`Successfully ${showFundsModal === 'add' ? 'added' : 'withdrew'} $${transactionAmount}`);
+      alert(`✓ Successfully ${transactionType === 'add' ? 'added' : 'withdrew'} $${transactionAmount}. New bankroll: $${newBankroll}`);
     } catch (error) {
       console.error('Transaction error:', error);
-      alert('Failed to process transaction');
+      alert(`Failed to process transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="animate-spin w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full mx-auto"></div>
-        <p className="text-neutral-400 mt-4">Loading your data...</p>
+        <div className="relative w-16 h-16 mx-auto mb-4">
+          <div className="absolute inset-0 border-2 border-[var(--accent)]/30 loading-pulse"></div>
+          <div className="absolute inset-2 border-2 border-[var(--accent)]/60 loading-pulse" style={{ animationDelay: '0.2s' }}></div>
+          <div className="absolute inset-4 bg-[var(--accent)] loading-dot"></div>
+        </div>
+        <p className="text-[var(--text-secondary)] mt-4">Loading your data...</p>
       </div>
     );
   }

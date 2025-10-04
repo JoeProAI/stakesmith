@@ -435,6 +435,8 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
   const testInDaytona = async (blueprint: Blueprint) => {
     try {
+      console.log('Testing blueprint in Daytona:', blueprint.strategy);
+      
       const res = await fetch('/api/daytona/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -442,15 +444,19 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       });
       
       const data = await res.json();
-      if (data?.sandboxUrl) {
+      console.log('Daytona response:', data);
+      
+      if (data?.sandboxUrl && data.sandboxUrl !== '/forge') {
+        console.log('Opening sandbox URL:', data.sandboxUrl);
         window.open(data.sandboxUrl, '_blank');
       } else if (data?.message) {
-        alert(data.message);
+        alert(`Daytona Testing:\n\n${data.message}`);
       } else {
-        alert('Daytona testing coming soon!');
+        alert('Daytona Testing:\n\nThis feature creates a live sandbox environment for backtesting your blueprint with Monte Carlo simulations.\n\nComing soon!');
       }
     } catch (error) {
-      alert('Daytona testing coming soon!');
+      console.error('Daytona error:', error);
+      alert('Daytona Testing:\n\nThis feature creates a live sandbox environment for backtesting your blueprint.\n\nComing soon!');
     }
   };
 
@@ -582,8 +588,12 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
               {bp.status === 'generating' ? (
                 <div className="py-8 text-center">
-                  <div className="animate-spin w-8 h-8 border-4 border-[var(--accent)] border-t-transparent rounded-full mx-auto mb-2"></div>
-                  <p className="text-sm text-neutral-400">Analyzing...</p>
+                  <div className="relative w-12 h-12 mx-auto mb-3">
+                    <div className="absolute inset-0 border-2 border-[var(--accent)]/30 loading-pulse"></div>
+                    <div className="absolute inset-2 border-2 border-[var(--accent)]/60 loading-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="absolute inset-4 bg-[var(--accent)] loading-dot"></div>
+                  </div>
+                  <p className="text-sm text-[var(--text-secondary)]">Analyzing...</p>
                 </div>
               ) : (
                 <>
