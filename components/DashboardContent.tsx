@@ -191,14 +191,27 @@ export default function DashboardContent() {
 
     try {
       console.log('Deleting blueprint:', blueprintId);
+      console.log('Document path:', `blueprints/${blueprintId}`);
+      
       await deleteDoc(doc(db, 'blueprints', blueprintId));
       
       // Update local state
       setBlueprints(prev => prev.filter(bp => bp.id !== blueprintId));
-      console.log('✓ Blueprint deleted');
-    } catch (error) {
+      console.log('✓ Blueprint deleted successfully');
+      alert(`✓ "${blueprintName}" deleted`);
+    } catch (error: any) {
       console.error('Delete error:', error);
-      alert('Failed to delete blueprint');
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      
+      let errorMessage = 'Failed to delete blueprint';
+      if (error.code === 'permission-denied') {
+        errorMessage = 'Permission denied. Check Firestore security rules.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(`❌ Delete Failed\n\n${errorMessage}\n\nCheck browser console for details.`);
     }
   };
 

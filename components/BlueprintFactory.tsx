@@ -283,11 +283,22 @@ Return ONLY valid JSON:
 
       const results = await Promise.all(promises);
       
+      // Filter out failed blueprints (those with no bets)
+      const validBlueprints = results.filter(bp => bp.bets && bp.bets.length > 0);
+      
+      if (validBlueprints.length === 0) {
+        throw new Error('All strategies failed to generate. Please try again.');
+      }
+      
       // Sort by EV (highest first)
-      const sorted = results.sort((a, b) => b.ev - a.ev);
+      const sorted = validBlueprints.sort((a, b) => b.ev - a.ev);
       setBlueprints(sorted);
 
       // Removed auto-save - user chooses what to save via Save button
+      
+      if (validBlueprints.length < results.length) {
+        alert(`Generated ${validBlueprints.length} strategies. ${results.length - validBlueprints.length} failed and were skipped.`);
+      }
 
     } catch (error) {
       console.error('Factory error:', error);
@@ -336,20 +347,22 @@ Return ONLY valid JSON:
     const idxFromId = Number(blueprintId.split('-')[1]);
     const strategy = strategies[idxFromId];
     
-    // CRITICAL: Deep clone the original blueprint to preserve all data
+    // Find the original blueprint to preserve its position
     const originalBlueprint = blueprints.find(bp => bp.id === blueprintId);
     if (!originalBlueprint) {
       console.error('Blueprint not found:', blueprintId);
       return;
     }
     
-    const originalClone = JSON.parse(JSON.stringify(originalBlueprint));
     console.log('Regenerating blueprint:', blueprintId, strategy.name);
-    console.log('Original preserved:', originalClone);
     
-    // Mark as generating
+    // Mark as generating (keep ALL other data intact)
     setBlueprints(prev => prev.map(bp => 
-      bp.id === blueprintId ? { ...bp, status: 'generating' as const } : bp
+      bp.id === blueprintId ? { 
+        ...bp, 
+        status: 'generating' as const,
+        aiReasoning: 'Regenerating...' 
+      } : bp
     ));
 
     try {
@@ -427,10 +440,13 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       setBlueprints(prev => prev.map(bp => bp.id === blueprintId ? newBlueprint : bp));
     } catch (error) {
       console.error('Regenerate error:', error);
-      // Restore DEEP CLONED original blueprint on error
-      console.log('Restoring original:', originalClone);
+      // On error, restore original blueprint's ready status but keep data
       setBlueprints(prev => prev.map(bp => 
-        bp.id === blueprintId ? { ...originalClone, status: 'ready' as const } : bp
+        bp.id === blueprintId ? { 
+          ...originalBlueprint, 
+          status: 'ready' as const,
+          aiReasoning: `Regeneration failed: ${error instanceof Error ? error.message : 'Try again'}` 
+        } : bp
       ));
       alert(`Failed to regenerate ${strategy.name}. ${error instanceof Error ? error.message : 'Please try again.'}`);
     }

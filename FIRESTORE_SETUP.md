@@ -53,10 +53,11 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
     }
     
-    // Users can read/write their own blueprints
+    // Users can read/write/update/delete their own blueprints
     match /blueprints/{blueprintId} {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
@@ -98,7 +99,7 @@ You need to add the Daytona API key to Vercel:
    npm run dev
    ```
 
-2. **Sign in with Google**
+2. **Sign in with Google**Reg
 
 3. **Try "Add Funds"**
    - Go to Dashboard
