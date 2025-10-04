@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Daytona } from '@daytonaio/sdk';
 
+export const runtime = 'nodejs'; // Daytona SDK requires Node.js runtime
 export const maxDuration = 300; // 5 minutes
 
 export async function POST(req: NextRequest) {
