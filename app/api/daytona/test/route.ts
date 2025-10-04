@@ -6,12 +6,21 @@ export async function POST(req: NextRequest) {
   try {
     const { blueprint } = await req.json();
     
+    console.log('Daytona test requested for:', blueprint.strategy);
+    
     const daytonaBase = process.env.DAYTONA_API_BASE || 'https://api.daytona.io';
     const daytonaKey = process.env.DAYTONA_API_KEY;
 
+    console.log('Daytona config:', {
+      hasApiKey: !!daytonaKey,
+      apiKeyLength: daytonaKey?.length || 0,
+      baseUrl: daytonaBase
+    });
+
     if (!daytonaKey) {
+      console.log('No Daytona API key configured');
       return NextResponse.json({
-        message: 'Daytona integration coming soon! This will create a live sandbox to backtest your blueprint.',
+        message: 'Daytona API key not configured.\n\nAdd DAYTONA_API_KEY to your Vercel environment variables to enable live sandbox testing.\n\nThis feature will create a Monte Carlo simulation environment for backtesting your blueprint.',
         sandboxUrl: '/forge'
       });
     }
@@ -54,6 +63,9 @@ export async function POST(req: NextRequest) {
       command: 'python /workspace/test_blueprint.py'
     };
 
+    console.log('Creating Daytona sandbox...');
+    console.log('Config:', JSON.stringify(sandboxConfig, null, 2));
+    
     const response = await fetch(`${daytonaBase}/workspaces`, {
       method: 'POST',
       headers: {
@@ -63,11 +75,16 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(sandboxConfig)
     });
 
+    console.log('Daytona API response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error('Failed to create Daytona sandbox');
+      const errorText = await response.text();
+      console.error('Daytona API error:', errorText);
+      throw new Error(`Daytona API returned ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('✓ Sandbox created:', data);
 
     return NextResponse.json({
       sandboxUrl: data.url || `${daytonaBase}/workspace/${data.id}`,
@@ -75,12 +92,15 @@ export async function POST(req: NextRequest) {
       message: 'Sandbox created! Opening Monte Carlo simulation...'
     });
 
-  } catch (error) {
-    console.error('Daytona error:', error);
+  } catch (error: any) {
+    console.error('❌ Daytona error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
     return NextResponse.json(
       { 
-        error: 'Daytona testing coming soon',
-        message: 'This will create a live sandbox to backtest your blueprint with Monte Carlo simulations'
+        error: error.message || 'Daytona testing failed',
+        message: `Daytona API Error:\n\n${error.message || 'Unknown error'}\n\nCheck server logs for details.`
       },
       { status: 200 } // Return 200 so the frontend shows the message
     );

@@ -444,19 +444,30 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       console.log('AI response received for', strategy.name);
       
       if (!aiData.text) {
-        throw new Error('No text in AI response');
+        console.error(`${strategy.name}: No text in AI response:`, aiData);
+        throw new Error('AI returned empty response');
       }
       
       const jsonMatch = aiData.text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
+        console.error(`${strategy.name}: No JSON found. Response:`, aiData.text.substring(0, 300));
         throw new Error('No valid JSON found in AI response');
       }
       
-      const parsed = JSON.parse(jsonMatch[0]);
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error(`${strategy.name}: JSON parse failed:`, jsonMatch[0].substring(0, 300));
+        throw new Error('Failed to parse JSON from AI');
+      }
       
       if (!parsed.bets || !Array.isArray(parsed.bets) || parsed.bets.length === 0) {
-        throw new Error('Invalid bets data in response');
+        console.error(`${strategy.name}: Invalid bets:`, parsed);
+        throw new Error('No valid bets in response');
       }
+      
+      console.log(`✓ ${strategy.name} validated:`, parsed.bets.length, 'bets');
       
       const totalOdds = parsed.bets.reduce((acc: number, bet: BetLeg) => {
         const decimal = bet.odds >= 100 ? 1 + bet.odds / 100 : 1 + 100 / Math.abs(bet.odds);
@@ -497,7 +508,13 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
   const testInDaytona = async (blueprint: Blueprint) => {
     try {
-      console.log('Testing blueprint in Daytona:', blueprint.strategy);
+      console.log('🧪 Testing blueprint in Daytona:', blueprint.strategy);
+      console.log('Blueprint data:', {
+        strategy: blueprint.strategy,
+        stake: blueprint.stake,
+        totalOdds: blueprint.totalOdds,
+        betsCount: blueprint.bets.length
+      });
       
       const res = await fetch('/api/daytona/test', {
         method: 'POST',
@@ -505,20 +522,29 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         body: JSON.stringify({ blueprint })
       });
       
-      const data = await res.json();
-      console.log('Daytona response:', data);
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}`);
+      }
       
-      if (data?.sandboxUrl && data.sandboxUrl !== '/forge') {
-        console.log('Opening sandbox URL:', data.sandboxUrl);
+      const data = await res.json();
+      console.log('Daytona API response:', data);
+      
+      if (data.error) {
+        console.error('Daytona error:', data.error);
+        alert(`⚠️ Daytona Test\n\n${data.message || data.error}\n\nCheck console for details.`);
+        return;
+      }
+      
+      if (data.sandboxUrl && data.sandboxUrl !== '/forge') {
+        console.log('✓ Opening sandbox:', data.sandboxUrl);
+        alert(`✓ Sandbox Created!\n\nOpening Monte Carlo simulation for:\n${blueprint.strategy}\n\nStake: $${blueprint.stake}\nPayout: ${blueprint.totalOdds}x`);
         window.open(data.sandboxUrl, '_blank');
-      } else if (data?.message) {
-        alert(`Daytona Testing:\n\n${data.message}`);
       } else {
-        alert('Daytona Testing:\n\nThis feature creates a live sandbox environment for backtesting your blueprint with Monte Carlo simulations.\n\nComing soon!');
+        alert(`ℹ️ Daytona Testing\n\n${data.message || 'This feature creates a live sandbox environment for backtesting your blueprint with Monte Carlo simulations.\n\nComing soon!'}`);
       }
     } catch (error) {
-      console.error('Daytona error:', error);
-      alert('Daytona Testing:\n\nThis feature creates a live sandbox environment for backtesting your blueprint.\n\nComing soon!');
+      console.error('❌ Daytona error:', error);
+      alert(`❌ Test Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}\n\nDaytona testing requires API configuration.\n\nCheck console for details.`);
     }
   };
 
