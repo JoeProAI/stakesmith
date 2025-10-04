@@ -122,12 +122,19 @@ export default function BlueprintFactory() {
 
       // Fetch detailed odds for top 5 games (includes player props and all markets)
       const detailedOddsPromises = oddsData.events.slice(0, 5).map((event: any) => 
-        fetch(`/api/odds/${event.id}`).then(res => res.ok ? res.json() : null)
+        fetch(`/api/odds/${event.id}`)
+          .then(res => res.ok ? res.json() : null)
+          .catch(err => {
+            console.log(`Detailed odds unavailable for game ${event.id} (normal if no props available)`);
+            return null;
+          })
       );
       const detailedOdds = (await Promise.all(detailedOddsPromises)).filter(Boolean);
 
-      // Combine basic and detailed odds
-      const allOdds = [...detailedOdds, ...oddsData.events.slice(5, 15)];
+      // Combine basic and detailed odds - use basic odds if no detailed available
+      const allOdds = detailedOdds.length > 0 
+        ? [...detailedOdds, ...oddsData.events.slice(5, 15)]
+        : oddsData.events;
 
       // Generate all blueprints concurrently
       const promises = viableStrategies.map(async (strategy, idx) => {
@@ -137,7 +144,19 @@ export default function BlueprintFactory() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              prompt: `You are an expert NFL bettor. Analyze these games and create a ${strategy.name} parlay blueprint.
+              prompt: `You are an expert NFL bettor. Create a ${strategy.name} betting strategy.
+
+CRITICAL: You MUST respond with ONLY valid JSON in this exact format:
+{
+  "bets": [
+    {"type": "game", "description": "Team vs Team - Bet Type", "odds": -110, "reasoning": "why", "confidence": 0.7, "ev": 0.05}
+  ],
+  "overallStrategy": "explanation",
+  "winProbability": 0.45,
+  "expectedValue": 0.08
+}
+
+DO NOT include any text before or after the JSON.
 
 Strategy: ${strategy.description}
 Focus: ${strategy.focus}
@@ -240,13 +259,33 @@ Return ONLY valid JSON:
           });
 
           const aiData = await aiRes.json();
+          
+          if (!aiData.text) {
+            console.error(`${strategy.name}: No text in AI response:`, aiData);
+            throw new Error('AI returned empty response');
+          }
+          
+          // Try to extract JSON from the response
           const jsonMatch = aiData.text.match(/\{[\s\S]*\}/);
           
           if (!jsonMatch) {
-            throw new Error('Invalid AI response');
+            console.error(`${strategy.name}: No JSON found in AI response:`, aiData.text.substring(0, 200));
+            throw new Error('No valid JSON in AI response');
           }
 
-          const parsed = JSON.parse(jsonMatch[0]);
+          let parsed;
+          try {
+            parsed = JSON.parse(jsonMatch[0]);
+          } catch (parseError) {
+            console.error(`${strategy.name}: JSON parse error:`, jsonMatch[0].substring(0, 200));
+            throw new Error('Failed to parse JSON');
+          }
+          
+          // Validate required fields
+          if (!parsed.bets || !Array.isArray(parsed.bets) || parsed.bets.length === 0) {
+            console.error(`${strategy.name}: Invalid bets in response:`, parsed);
+            throw new Error('No valid bets in response');
+          }
           
           // Calculate total odds
           const totalOdds = parsed.bets.reduce((acc: number, bet: BetLeg) => {
@@ -370,10 +409,14 @@ Return ONLY valid JSON:
       const oddsData = await oddsRes.json();
       
       const detailedOddsPromises = oddsData.events.slice(0, 5).map((event: any) => 
-        fetch(`/api/odds/${event.id}`).then(res => res.ok ? res.json() : null)
+        fetch(`/api/odds/${event.id}`)
+          .then(res => res.ok ? res.json() : null)
+          .catch(err => null)
       );
       const detailedOdds = (await Promise.all(detailedOddsPromises)).filter(Boolean);
-      const allOdds = [...detailedOdds, ...oddsData.events.slice(5, 15)];
+      const allOdds = detailedOdds.length > 0 
+        ? [...detailedOdds, ...oddsData.events.slice(5, 15)]
+        : oddsData.events;
 
       const riskMult = riskLevel === 'conservative' ? 0.5 : riskLevel === 'aggressive' ? 1.5 : 1;
       const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * riskMult * 100) / 100);
