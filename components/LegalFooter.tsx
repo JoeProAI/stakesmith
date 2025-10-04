@@ -4,9 +4,9 @@ export default function LegalFooter() {
       <div className="container mx-auto px-4 py-6">
         <div className="text-center space-y-3">
           <p className="text-xs text-neutral-500">
-            <span className="text-orange-400 font-semibold">Entertainment & Educational Use Only</span> – AI predictions aren't guarantees. 
+            <span className="text-orange-400 font-semibold">Entertainment & Educational Use Only</span> – AI predictions aren&apos;t guarantees. 
             Sports betting involves risk. You may lose money. All decisions at <strong>your own risk</strong>. 
-            StakeSmith doesn't facilitate wagers and accepts <strong>no liability</strong> for losses.
+            StakeSmith doesn&apos;t facilitate wagers and accepts <strong>no liability</strong> for losses.
           </p>
           
           <div className="flex flex-wrap justify-center gap-4 text-xs text-neutral-600">
