@@ -18,10 +18,46 @@ export default function AuthButton() {
 
   const handleSignIn = async () => {
     try {
+      console.log('🔐 Starting sign in...');
+      console.log('Auth config:', {
+        apiKey: auth.app.options.apiKey?.substring(0, 10) + '...',
+        authDomain: auth.app.options.authDomain,
+        projectId: auth.app.options.projectId
+      });
+      
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error('Sign in error:', error);
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      console.log('Opening Google popup...');
+      const result = await signInWithPopup(auth, provider);
+      
+      console.log('✅ Sign in successful!');
+      console.log('User:', result.user.email);
+      console.log('Display name:', result.user.displayName);
+      console.log('UID:', result.user.uid);
+      
+    } catch (error: any) {
+      console.error('❌ Sign in error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      
+      let userMessage = 'Sign in failed';
+      
+      if (error.code === 'auth/popup-blocked') {
+        userMessage = 'Popup was blocked by browser. Please allow popups for this site.';
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        userMessage = 'Sign in cancelled.';
+      } else if (error.code === 'auth/unauthorized-domain') {
+        userMessage = 'This domain is not authorized. Add it to Firebase Console > Authentication > Settings > Authorized domains';
+      } else if (error.code === 'auth/operation-not-allowed') {
+        userMessage = 'Google sign-in not enabled. Enable it in Firebase Console > Authentication > Sign-in method';
+      } else {
+        userMessage = error.message || 'Unknown error occurred';
+      }
+      
+      alert(`Sign In Failed\n\n${userMessage}\n\nCheck browser console for details.`);
     }
   };
 
