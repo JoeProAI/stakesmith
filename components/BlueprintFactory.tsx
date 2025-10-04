@@ -591,14 +591,8 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
               {bp.status === 'generating' ? (
                 <div className="py-8 text-center">
-                  <div className="relative w-16 h-16 mx-auto mb-3">
-                    {/* Chip stack animation */}
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-3 bg-[var(--accent)] chip-stack-anim" style={{ animationDelay: '0s' }}></div>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-3 bg-[var(--accent)]/80 chip-stack-anim" style={{ animationDelay: '0.3s' }}></div>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-3 bg-[var(--accent)]/60 chip-stack-anim" style={{ animationDelay: '0.6s' }}></div>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-3 bg-[var(--accent)]/40 chip-stack-anim" style={{ animationDelay: '0.9s' }}></div>
-                  </div>
-                  <p className="text-sm text-[var(--text-secondary)] mt-4">Analyzing odds...</p>
+                  <div className="w-16 h-16 mx-auto mb-3 heat-glow"></div>
+                  <p className="text-sm text-[var(--text-secondary)]">Analyzing odds...</p>
                 </div>
               ) : (
                 <>

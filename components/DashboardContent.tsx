@@ -231,14 +231,8 @@ export default function DashboardContent() {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="relative w-20 h-20 mx-auto mb-4">
-          {/* Chip stacking animation */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-[var(--accent)] chip-stack-anim" style={{ animationDelay: '0s' }}></div>
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-[var(--accent)]/80 chip-stack-anim" style={{ animationDelay: '0.3s' }}></div>
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-[var(--accent)]/60 chip-stack-anim" style={{ animationDelay: '0.6s' }}></div>
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-[var(--accent)]/40 chip-stack-anim" style={{ animationDelay: '0.9s' }}></div>
-        </div>
-        <p className="text-[var(--text-secondary)] mt-4">Loading your data...</p>
+        <div className="w-20 h-20 mx-auto mb-4 heat-glow"></div>
+        <p className="text-[var(--text-secondary)]">Loading your data...</p>
       </div>
     );
   }
