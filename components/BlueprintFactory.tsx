@@ -506,47 +506,6 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
     }
   };
 
-  const testInDaytona = async (blueprint: Blueprint) => {
-    try {
-      console.log('🧪 Testing blueprint in Daytona:', blueprint.strategy);
-      console.log('Blueprint data:', {
-        strategy: blueprint.strategy,
-        stake: blueprint.stake,
-        totalOdds: blueprint.totalOdds,
-        betsCount: blueprint.bets.length
-      });
-      
-      const res = await fetch('/api/daytona/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blueprint })
-      });
-      
-      if (!res.ok) {
-        throw new Error(`API returned ${res.status}`);
-      }
-      
-      const data = await res.json();
-      console.log('Daytona API response:', data);
-      
-      if (data.error) {
-        console.error('Daytona error:', data.error);
-        alert(`⚠️ Daytona Test\n\n${data.message || data.error}\n\nCheck console for details.`);
-        return;
-      }
-      
-      if (data.sandboxUrl && data.sandboxUrl !== '/forge') {
-        console.log('✓ Opening sandbox:', data.sandboxUrl);
-        alert(`✓ Sandbox Created!\n\nOpening Monte Carlo simulation for:\n${blueprint.strategy}\n\nStake: $${blueprint.stake}\nPayout: ${blueprint.totalOdds}x`);
-        window.open(data.sandboxUrl, '_blank');
-      } else {
-        alert(`ℹ️ Daytona Testing\n\n${data.message || 'This feature creates a live sandbox environment for backtesting your blueprint with Monte Carlo simulations.\n\nComing soon!'}`);
-      }
-    } catch (error) {
-      console.error('❌ Daytona error:', error);
-      alert(`❌ Test Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}\n\nDaytona testing requires API configuration.\n\nCheck console for details.`);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -722,41 +681,25 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                   </div>
 
                   {/* Actions */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => setSelectedStrategy(bp.id)}
                       className="text-xs bg-[var(--card)] border border-[var(--border)] py-2 hover:border-[var(--accent)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     >
                       View Details
                     </button>
-                    {savedBlueprints.includes(bp.id) ? (
-                      <button
-                        disabled
-                        className="text-xs bg-[var(--success)]/20 border border-[var(--success)]/50 py-2 cursor-not-allowed text-[var(--success)]"
-                      >
-                        Saved
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => saveBlueprint(bp)}
-                        className="text-xs bg-[var(--success)]/10 border border-[var(--success)] py-2 hover:bg-[var(--success)]/20 transition-colors text-[var(--success)]"
-                      >
-                        Save
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <button
+                      disabled={savedBlueprints.includes(bp.id)}
+                      onClick={() => saveBlueprint(bp)}
+                      className="text-xs bg-[var(--success)]/10 border border-[var(--success)] py-2 hover:bg-[var(--success)]/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[var(--success)]"
+                    >
+                      {savedBlueprints.includes(bp.id) ? 'Saved' : 'Save'}
+                    </button>
                     <button
                       onClick={() => regenerateBlueprint(bp.id)}
                       className="text-xs bg-[var(--warning)]/10 border border-[var(--warning)] py-2 hover:bg-[var(--warning)]/20 transition-colors text-[var(--warning)]"
                     >
                       Regenerate
-                    </button>
-                    <button
-                      onClick={() => testInDaytona(bp)}
-                      className="text-xs bg-[var(--accent)]/10 border border-[var(--accent)] py-2 hover:bg-[var(--accent)]/20 transition-colors text-[var(--accent)]"
-                    >
-                      Test
                     </button>
                   </div>
                 </>
