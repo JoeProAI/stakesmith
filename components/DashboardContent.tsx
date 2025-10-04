@@ -86,34 +86,51 @@ export default function DashboardContent() {
   };
 
   const handleFundsTransaction = async () => {
-    if (!user || !amount || isNaN(Number(amount))) {
-      alert('Please enter a valid amount');
+    console.log('=== FUNDS TRANSACTION STARTED ===');
+    console.log('User:', user?.uid);
+    console.log('Amount input:', amount);
+    console.log('Current bankroll:', bankroll);
+    console.log('Modal type:', showFundsModal);
+
+    if (!user) {
+      alert('❌ Error: You must be signed in to manage funds');
+      return;
+    }
+
+    if (!amount || isNaN(Number(amount))) {
+      alert('❌ Error: Please enter a valid amount');
       return;
     }
 
     const transactionAmount = Number(amount);
     if (transactionAmount <= 0) {
-      alert('Amount must be greater than 0');
+      alert('❌ Error: Amount must be greater than 0');
       return;
     }
 
     if (showFundsModal === 'withdraw' && transactionAmount > bankroll) {
-      alert('Insufficient funds');
+      alert('❌ Error: Insufficient funds');
       return;
     }
 
     const transactionType = showFundsModal;
 
     try {
-      console.log('Starting transaction:', { transactionType, transactionAmount, currentBankroll: bankroll });
+      console.log('✓ Validation passed');
+      console.log('Transaction details:', { 
+        type: transactionType, 
+        amount: transactionAmount, 
+        currentBankroll: bankroll 
+      });
 
       const newBankroll = transactionType === 'add' 
         ? bankroll + transactionAmount 
         : bankroll - transactionAmount;
 
-      console.log('New bankroll will be:', newBankroll);
+      console.log('Calculated new bankroll:', newBankroll);
 
       // Save transaction to Firestore
+      console.log('Saving transaction to Firestore...');
       const transactionRef = await addDoc(collection(db, 'transactions'), {
         userId: user.uid,
         type: transactionType,
@@ -123,9 +140,10 @@ export default function DashboardContent() {
         timestamp: new Date(),
         date: new Date().toISOString()
       });
-      console.log('Transaction saved:', transactionRef.id);
+      console.log('✓ Transaction saved with ID:', transactionRef.id);
 
       // Upsert user bankroll profile
+      console.log('Updating user profile...');
       const userRef = doc(db, 'users', user.uid);
       await setDoc(
         userRef,
@@ -137,17 +155,30 @@ export default function DashboardContent() {
         },
         { merge: true }
       );
-      console.log('User profile updated');
+      console.log('✓ User profile updated');
 
-      // Update local state
+      // Update local state immediately
+      console.log('Updating local state...');
       setBankroll(newBankroll);
       setAmount('');
       setShowFundsModal(null);
       
-      alert(`✓ Successfully ${transactionType === 'add' ? 'added' : 'withdrew'} $${transactionAmount}. New bankroll: $${newBankroll}`);
-    } catch (error) {
-      console.error('Transaction error:', error);
-      alert(`Failed to process transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.log('=== TRANSACTION COMPLETE ===');
+      alert(`✓ Success!\n\n${transactionType === 'add' ? 'Added' : 'Withdrew'} $${transactionAmount}\n\nNew Bankroll: $${newBankroll.toLocaleString()}`);
+    } catch (error: any) {
+      console.error('❌ TRANSACTION ERROR:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      let errorMessage = 'Unknown error occurred';
+      if (error.code === 'permission-denied') {
+        errorMessage = 'Permission denied. Check Firestore security rules.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(`❌ Transaction Failed\n\n${errorMessage}\n\nCheck the browser console for details.`);
     }
   };
 

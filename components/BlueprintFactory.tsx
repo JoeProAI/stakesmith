@@ -361,6 +361,15 @@ Return ONLY valid JSON:
     const idxFromId = Number(blueprintId.split('-')[1]);
     const strategy = strategies[idxFromId];
     
+    // Store original blueprint for restoration on error
+    const originalBlueprint = blueprints.find(bp => bp.id === blueprintId);
+    if (!originalBlueprint) {
+      console.error('Blueprint not found:', blueprintId);
+      return;
+    }
+    
+    console.log('Regenerating blueprint:', blueprintId, strategy.name);
+    
     // Mark as generating
     setBlueprints(prev => prev.map(bp => 
       bp.id === blueprintId ? { ...bp, status: 'generating' as const } : bp
@@ -399,8 +408,22 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       });
 
       const aiData = await aiRes.json();
+      console.log('AI response received for', strategy.name);
+      
+      if (!aiData.text) {
+        throw new Error('No text in AI response');
+      }
+      
       const jsonMatch = aiData.text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No valid JSON found in AI response');
+      }
+      
       const parsed = JSON.parse(jsonMatch[0]);
+      
+      if (!parsed.bets || !Array.isArray(parsed.bets) || parsed.bets.length === 0) {
+        throw new Error('Invalid bets data in response');
+      }
       
       const totalOdds = parsed.bets.reduce((acc: number, bet: BetLeg) => {
         const decimal = bet.odds >= 100 ? 1 + bet.odds / 100 : 1 + 100 / Math.abs(bet.odds);
@@ -423,13 +446,15 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         status: 'ready' as const
       };
 
+      console.log('Successfully regenerated', strategy.name);
       setBlueprints(prev => prev.map(bp => bp.id === blueprintId ? newBlueprint : bp));
     } catch (error) {
-      // Restore original blueprint on error
+      console.error('Regenerate error:', error);
+      // Restore full original blueprint on error
       setBlueprints(prev => prev.map(bp => 
-        bp.id === blueprintId ? { ...bp, status: 'ready' as const } : bp
+        bp.id === blueprintId ? { ...originalBlueprint, status: 'ready' as const } : bp
       ));
-      alert('Failed to regenerate blueprint. Please try again.');
+      alert(`Failed to regenerate ${strategy.name}. ${error instanceof Error ? error.message : 'Please try again.'}`);
     }
   };
 
