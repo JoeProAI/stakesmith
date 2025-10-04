@@ -23,7 +23,7 @@ export default function Home() {
             <div className="mt-4 px-3 py-2 bg-orange-500/5 border-l-2 border-orange-500 rounded text-xs">
               <p className="text-orange-400 font-semibold mb-1">⚠️ For Entertainment Only</p>
               <p className="text-neutral-400">
-                AI predictions aren't guarantees. All betting at your own risk. You may lose money.
+                AI predictions aren&apos;t guarantees. All betting at your own risk. You may lose money.
               </p>
             </div>
 

@@ -71,7 +71,7 @@ export default function DisclaimerBanner() {
             <div className="text-lg">⚖️</div>
             <div>
               <p className="font-semibold text-white mb-1">Your Responsibility</p>
-              <p className="text-neutral-400">You're responsible for legal compliance. StakeSmith doesn't facilitate wagers. We provide analysis tools only.</p>
+              <p className="text-neutral-400">You&apos;re responsible for legal compliance. StakeSmith doesn&apos;t facilitate wagers. We provide analysis tools only.</p>
             </div>
           </div>
 
@@ -97,7 +97,7 @@ export default function DisclaimerBanner() {
               }}
             />
             <span className="text-xs text-neutral-400">
-              I acknowledge I've read the above. I'm of legal gambling age. I understand all betting is at my own risk with no guarantees.
+              I acknowledge I&apos;ve read the above. I&apos;m of legal gambling age. I understand all betting is at my own risk with no guarantees.
             </span>
           </label>
 
