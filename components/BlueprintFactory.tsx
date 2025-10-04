@@ -525,19 +525,31 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       
       if (data.success && data.simulation) {
         const sim = data.simulation;
+        
+        // Build leg success rates display
+        let legBreakdown = '';
+        if (sim.leg_success_rates && sim.leg_success_rates.length > 0) {
+          legBreakdown = '\n\n📈 Individual Leg Hit Rates:\n';
+          sim.leg_success_rates.forEach((rate: number, idx: number) => {
+            legBreakdown += `  Leg ${idx + 1}: ${rate}%\n`;
+          });
+        }
+        
         alert(
-          `✅ Monte Carlo Simulation Complete!\n\n` +
+          `✅ Monte Carlo Complete! (${sim.num_legs} legs)\n\n` +
           `Strategy: ${blueprint.strategy}\n` +
           `Stake: $${blueprint.stake}\n` +
           `Payout: ${blueprint.totalOdds}x\n\n` +
-          `📊 Results (1,000 simulations):\n` +
-          `Win Rate: ${sim.win_rate}%\n` +
+          `📊 Results (1,000 simulations using REAL odds):\n` +
+          `Simulated Win Rate: ${sim.win_rate}%\n` +
+          `Theoretical Win Rate: ${sim.theoretical_win_rate}%\n` +
           `Expected Profit/Bet: $${sim.expected_profit_per_bet}\n` +
           `ROI: ${sim.roi}%\n` +
           `Total Profit (1000 bets): $${sim.total_profit_1000_bets}\n` +
           `Max Profit: $${sim.max_profit}\n` +
           `Max Loss: $${sim.max_loss}\n` +
-          `95% Confidence: ±$${sim.confidence_interval_95}`
+          `95% Confidence: ±$${sim.confidence_interval_95}` +
+          legBreakdown
         );
       } else {
         alert(data.message || 'Simulation completed');

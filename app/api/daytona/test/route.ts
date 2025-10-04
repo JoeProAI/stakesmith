@@ -36,7 +36,17 @@ export async function POST(req: NextRequest) {
     console.log('✓ Sandbox created:', sandbox.id);
 
     try {
-      // Create Python script for Monte Carlo simulation
+      // Prepare bets data with actual odds
+      const betsData = blueprint.bets.map((bet: any) => ({
+        description: bet.description || bet.pick || 'Unknown',
+        odds: bet.odds,
+        // Convert American odds to implied probability
+        impliedProb: bet.odds >= 100 
+          ? 100 / (bet.odds + 100) 
+          : Math.abs(bet.odds) / (Math.abs(bet.odds) + 100)
+      }));
+
+      // Create Python script for Monte Carlo simulation with REAL odds data
       const pythonScript = `
 import random
 import json
@@ -44,22 +54,45 @@ import json
 # Blueprint data
 strategy = "${blueprint.strategy}"
 stake = ${blueprint.stake}
-total_odds = ${blueprint.totalOdds}
-estimated_win_prob = ${blueprint.winProb}
 num_simulations = 1000
 
-# Run Monte Carlo simulations
+# Individual bets with REAL odds and implied probabilities
+bets = ${JSON.stringify(betsData)}
+
+print(f"Running Monte Carlo with {len(bets)} legs:", file=__import__('sys').stderr)
+for i, bet in enumerate(bets):
+    print(f"  Leg {i+1}: {bet['description'][:50]} - Odds: {bet['odds']:+d} - Implied Win%: {bet['impliedProb']*100:.1f}%", file=__import__('sys').stderr)
+
+# Run Monte Carlo simulations - each leg simulated independently
 wins = 0
 losses = 0
 total_profit = 0
 max_profit = 0
 max_loss = 0
+leg_hit_counts = [0] * len(bets)
 
-for i in range(num_simulations):
-    # Simulate bet outcome based on win probability
-    if random.random() < estimated_win_prob:
+for sim in range(num_simulations):
+    # Simulate each leg independently based on its implied probability
+    parlay_hits = True
+    
+    for leg_idx, bet in enumerate(bets):
+        if random.random() < bet['impliedProb']:
+            leg_hit_counts[leg_idx] += 1
+        else:
+            parlay_hits = False
+    
+    # Parlay only wins if ALL legs hit
+    if parlay_hits:
         wins += 1
-        profit = stake * (total_odds - 1)
+        # Calculate actual payout from individual odds
+        parlay_odds = 1.0
+        for bet in bets:
+            if bet['odds'] >= 100:
+                parlay_odds *= (1 + bet['odds'] / 100)
+            else:
+                parlay_odds *= (1 + 100 / abs(bet['odds']))
+        
+        profit = stake * (parlay_odds - 1)
         total_profit += profit
         max_profit = max(max_profit, profit)
     else:
@@ -72,9 +105,18 @@ win_rate = (wins / num_simulations) * 100
 avg_profit = total_profit / num_simulations
 roi = (avg_profit / stake) * 100
 
-# Calculate confidence intervals (95%)
-std_dev = (stake * total_odds * estimated_win_prob * (1 - estimated_win_prob)) ** 0.5
+# Calculate variance and confidence intervals
+variance = sum((stake * (wins/num_simulations) - (stake if i < wins else -stake))**2 for i in range(num_simulations)) / num_simulations
+std_dev = variance ** 0.5
 confidence_95 = 1.96 * std_dev / (num_simulations ** 0.5)
+
+# Individual leg success rates
+leg_success_rates = [round((count / num_simulations) * 100, 1) for count in leg_hit_counts]
+
+# Calculate theoretical parlay probability (multiply all implied probs)
+theoretical_win_prob = 1.0
+for bet in bets:
+    theoretical_win_prob *= bet['impliedProb']
 
 # Output results as JSON
 results = {
@@ -82,12 +124,15 @@ results = {
     "wins": wins,
     "losses": losses,
     "win_rate": round(win_rate, 2),
+    "theoretical_win_rate": round(theoretical_win_prob * 100, 2),
     "expected_profit_per_bet": round(avg_profit, 2),
     "roi": round(roi, 2),
     "total_profit_1000_bets": round(total_profit, 2),
     "max_profit": round(max_profit, 2),
     "max_loss": round(max_loss, 2),
-    "confidence_interval_95": round(confidence_95, 2)
+    "confidence_interval_95": round(confidence_95, 2),
+    "leg_success_rates": leg_success_rates,
+    "num_legs": len(bets)
 }
 
 print(json.dumps(results))
