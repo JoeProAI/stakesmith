@@ -12,10 +12,10 @@ export default function Dashboard() {
             Track your bankroll, saved blueprints, and betting performance
           </p>
         </div>
-        <div className="mb-4 p-3 bg-[var(--warning)]/10 border border-[var(--warning)]/30 rounded text-xs">
-          <p className="text-[var(--warning)] font-bold">💰 Financial Tracking Only - No Wagering</p>
-          <p className="text-[var(--text-secondary)] mt-1">
-            This dashboard tracks your betting activity for record-keeping purposes only. StakeSmith does not process or facilitate wagers. All liability is yours.
+        <div className="mb-4 px-3 py-2 bg-blue-500/5 border-l-2 border-blue-500 rounded text-xs flex items-center gap-2">
+          <span className="text-lg">💰</span>
+          <p className="text-neutral-400">
+            <span className="text-blue-400 font-semibold">Tracking only:</span> StakeSmith doesn't process wagers. All liability is yours.
           </p>
         </div>
         <DashboardContent />

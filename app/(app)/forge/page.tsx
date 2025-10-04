@@ -5,10 +5,10 @@ export default function Forge() {
   return (
     <>
       <main className="mx-auto max-w-7xl p-6">
-        <div className="mb-4 p-3 bg-[var(--danger)]/10 border border-[var(--danger)]/30 rounded text-xs">
-          <p className="text-[var(--danger)] font-bold">⚠️ Entertainment Only - No Guarantees</p>
-          <p className="text-[var(--text-secondary)] mt-1">
-            AI-generated strategies are NOT guarantees. All betting is at YOUR OWN RISK. You may lose money.
+        <div className="mb-4 px-3 py-2 bg-orange-500/5 border-l-2 border-orange-500 rounded text-xs flex items-center gap-2">
+          <span className="text-lg">⚠️</span>
+          <p className="text-neutral-400">
+            <span className="text-orange-400 font-semibold">Entertainment only:</span> AI strategies aren't guarantees. Bet at your own risk.
           </p>
         </div>
         <BlueprintFactory />

@@ -20,11 +20,10 @@ export default function Home() {
               Input bankroll + risk, get interactive parlays and EV sims tied to live odds.
             </p>
             
-            <div className="mt-4 p-4 bg-[var(--danger)]/10 border border-[var(--danger)]/30 rounded text-xs">
-              <p className="text-[var(--danger)] font-bold mb-1">⚠️ IMPORTANT DISCLAIMER</p>
-              <p className="text-[var(--text-secondary)]">
-                For entertainment & educational purposes only. AI predictions are NOT guarantees. 
-                All betting is at YOUR OWN RISK. You may lose money. Never bet more than you can afford to lose.
+            <div className="mt-4 px-3 py-2 bg-orange-500/5 border-l-2 border-orange-500 rounded text-xs">
+              <p className="text-orange-400 font-semibold mb-1">⚠️ For Entertainment Only</p>
+              <p className="text-neutral-400">
+                AI predictions aren't guarantees. All betting at your own risk. You may lose money.
               </p>
             </div>
 

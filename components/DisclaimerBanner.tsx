@@ -20,78 +20,72 @@ export default function DisclaimerBanner() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[var(--card)] border-2 border-[var(--danger)] max-w-2xl w-full p-8 shadow-2xl">
-        <div className="text-center mb-6">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-[var(--danger)] mb-2">
-            IMPORTANT LEGAL DISCLAIMER
-          </h2>
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="bg-gradient-to-b from-neutral-900 to-black border border-neutral-800 max-w-2xl w-full rounded-lg shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-600/20 to-red-600/20 border-b border-orange-500/30 p-6">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">⚠️</div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Important Disclaimer</h2>
+              <p className="text-sm text-neutral-400">Please read carefully before continuing</p>
+            </div>
+          </div>
         </div>
-
-        <div className="space-y-4 text-[var(--text-secondary)] text-sm leading-relaxed max-h-96 overflow-y-auto">
-          <div className="bg-[var(--danger)]/10 border border-[var(--danger)]/30 p-4">
-            <p className="font-bold text-[var(--danger)] mb-2">🔞 AGE REQUIREMENT</p>
-            <p>You must be at least 21 years of age (or the legal gambling age in your jurisdiction) to use this application.</p>
+        
+        {/* Content */}
+        <div className="p-6 space-y-3 text-sm max-h-96 overflow-y-auto">
+          <div className="flex gap-3 p-3 bg-orange-500/5 border-l-2 border-orange-500 rounded">
+            <div className="text-lg">🔞</div>
+            <div>
+              <p className="font-semibold text-orange-400 mb-1">Age Requirement</p>
+              <p className="text-neutral-400">You must be 21+ to use this service.</p>
+            </div>
           </div>
 
-          <div>
-            <p className="font-bold mb-2">📊 NO GUARANTEES</p>
-            <p>
-              StakeSmith provides statistical analysis and AI-generated betting strategies for <strong>ENTERTAINMENT AND EDUCATIONAL PURPOSES ONLY</strong>. 
-              All predictions, odds analysis, Monte Carlo simulations, and betting recommendations are <strong>NOT GUARANTEES</strong> of future results.
-            </p>
+          <div className="flex gap-3 p-3">
+            <div className="text-lg">📊</div>
+            <div>
+              <p className="font-semibold text-white mb-1">No Guarantees</p>
+              <p className="text-neutral-400">For entertainment & educational purposes only. AI predictions are <strong>not guarantees</strong> of future results.</p>
+            </div>
           </div>
 
-          <div>
-            <p className="font-bold mb-2">💰 FINANCIAL RISK</p>
-            <p>
-              Sports betting involves substantial financial risk. You may lose money. <strong>NEVER BET MORE THAN YOU CAN AFFORD TO LOSE</strong>. 
-              Past performance does not indicate future results. All betting decisions are made at <strong>YOUR OWN RISK</strong>.
-            </p>
+          <div className="flex gap-3 p-3">
+            <div className="text-lg">💰</div>
+            <div>
+              <p className="font-semibold text-white mb-1">Financial Risk</p>
+              <p className="text-neutral-400">Sports betting involves risk. You may lose money. Never bet more than you can afford to lose. All decisions at <strong>your own risk</strong>.</p>
+            </div>
           </div>
 
-          <div>
-            <p className="font-bold mb-2">🎲 GAMBLING ADDICTION WARNING</p>
-            <p>
-              Gambling can be addictive. If you or someone you know has a gambling problem, call the National Problem Gambling Helpline at 
-              <strong> 1-800-522-4700</strong> or visit <a href="https://www.ncpgambling.org" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] underline">ncpgambling.org</a>.
-            </p>
+          <div className="flex gap-3 p-3">
+            <div className="text-lg">🎲</div>
+            <div>
+              <p className="font-semibold text-white mb-1">Problem Gambling Help</p>
+              <p className="text-neutral-400">Call <strong>1-800-522-4700</strong> or visit <a href="https://www.ncpgambling.org" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] underline">ncpgambling.org</a></p>
+            </div>
           </div>
 
-          <div>
-            <p className="font-bold mb-2">⚖️ LEGAL COMPLIANCE</p>
-            <p>
-              You are responsible for ensuring that sports betting is legal in your jurisdiction. StakeSmith does not facilitate, process, or accept wagers. 
-              We provide analysis tools only. Compliance with all applicable laws is <strong>YOUR RESPONSIBILITY</strong>.
-            </p>
+          <div className="flex gap-3 p-3">
+            <div className="text-lg">⚖️</div>
+            <div>
+              <p className="font-semibold text-white mb-1">Your Responsibility</p>
+              <p className="text-neutral-400">You're responsible for legal compliance. StakeSmith doesn't facilitate wagers. We provide analysis tools only.</p>
+            </div>
           </div>
 
-          <div>
-            <p className="font-bold mb-2">🤖 AI-GENERATED CONTENT</p>
-            <p>
-              Betting strategies and analysis are generated by artificial intelligence and may contain errors, inaccuracies, or outdated information. 
-              <strong> DO NOT RELY SOLELY</strong> on AI-generated recommendations. Always conduct your own research and due diligence.
-            </p>
-          </div>
-
-          <div>
-            <p className="font-bold mb-2">📜 NO LIABILITY</p>
-            <p>
-              StakeSmith and its creators accept <strong>NO LIABILITY</strong> for any losses, damages, or consequences resulting from the use of this application. 
-              By using StakeSmith, you acknowledge that all betting decisions are made independently and at your sole discretion.
-            </p>
-          </div>
-
-          <div className="bg-[var(--warning)]/10 border border-[var(--warning)]/30 p-4">
-            <p className="font-bold text-[var(--warning)] mb-2">🎯 RESPONSIBLE GAMBLING</p>
-            <p>
-              Set betting limits. Never chase losses. Take breaks. Gambling should be entertainment, not a way to make money or solve financial problems.
-            </p>
+          <div className="flex gap-3 p-3">
+            <div className="text-lg">📜</div>
+            <div>
+              <p className="font-semibold text-white mb-1">No Liability</p>
+              <p className="text-neutral-400">StakeSmith accepts <strong>no liability</strong> for losses or consequences from using this app.</p>
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 space-y-3">
+        {/* Footer */}
+        <div className="p-6 bg-neutral-900/50 border-t border-neutral-800 space-y-3">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -102,9 +96,8 @@ export default function DisclaimerBanner() {
                 if (btn) btn.disabled = !e.target.checked;
               }}
             />
-            <span className="text-sm text-[var(--text-secondary)]">
-              I acknowledge that I have read and understood the above disclaimers. I am of legal gambling age in my jurisdiction. 
-              I understand that all betting is done at my own risk with no guarantees of profit.
+            <span className="text-xs text-neutral-400">
+              I acknowledge I've read the above. I'm of legal gambling age. I understand all betting is at my own risk with no guarantees.
             </span>
           </label>
 
@@ -112,7 +105,7 @@ export default function DisclaimerBanner() {
             id="acknowledge-btn"
             onClick={handleAcknowledge}
             disabled
-            className="w-full py-3 bg-[var(--danger)] text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--danger)]/80 transition-colors"
+            className="w-full py-3 bg-orange-600 text-white font-semibold rounded disabled:opacity-40 disabled:cursor-not-allowed hover:bg-orange-700 transition-colors"
           >
             I Understand and Accept
           </button>
