@@ -17,13 +17,13 @@ export async function POST(req: NextRequest) {
       baseUrl: daytonaBase
     });
 
-    if (!daytonaKey) {
-      console.log('No Daytona API key configured');
-      return NextResponse.json({
-        message: 'Daytona API key not configured.\n\nAdd DAYTONA_API_KEY to your Vercel environment variables to enable live sandbox testing.\n\nThis feature will create a Monte Carlo simulation environment for backtesting your blueprint.',
-        sandboxUrl: '/forge'
-      });
-    }
+    // Daytona integration is placeholder for now
+    // The actual API endpoint and authentication needs to be configured
+    console.log('Daytona test feature - Coming soon');
+    return NextResponse.json({
+      message: '🧪 Daytona Sandbox Testing - Coming Soon!\n\nThis feature will create a live isolated environment to:\n• Run 10,000 Monte Carlo simulations\n• Backtest against historical data\n• Provide confidence intervals\n• Generate detailed performance reports\n\nStay tuned!',
+      sandboxUrl: '/forge'
+    });
 
     // Create Daytona sandbox with blueprint testing environment
     const pythonScript = [
