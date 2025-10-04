@@ -32,22 +32,21 @@ type Blueprint = {
 };
 
 const strategies = [
-  { name: 'Safe Money', risk: 0.02, minBankroll: 50, description: 'Favorites ML + conservative spreads', icon: '🛡️', focus: 'favorites' },
-  { name: 'Balanced Attack', risk: 0.05, minBankroll: 20, description: 'Mix of spreads, totals, and value plays', icon: '⚖️', focus: 'balanced' },
-  { name: 'High Roller', risk: 0.10, minBankroll: 10, description: 'Aggressive underdogs, long odds', icon: '🎲', focus: 'underdogs' },
-  { name: 'QB Props Master', risk: 0.04, minBankroll: 25, description: 'Passing yards, TDs, completions', icon: '🎯', focus: 'qb_props' },
-  { name: 'RB Rushing Plays', risk: 0.04, minBankroll: 25, description: 'Rushing yards, TDs, attempts', icon: '🏃', focus: 'rb_props' },
-  { name: 'WR Reception Targets', risk: 0.04, minBankroll: 25, description: 'Receptions, yards, TD catches', icon: '🙌', focus: 'wr_props' },
-  { name: 'Alternate Lines Value', risk: 0.06, minBankroll: 20, description: 'Alt spreads & totals with better odds', icon: '↕️', focus: 'alternates' },
-  { name: 'Same Game Parlay', risk: 0.07, minBankroll: 15, description: 'Multiple bets from single game', icon: '🎪', focus: 'sgp' },
-  { name: 'First Half Specialist', risk: 0.05, minBankroll: 20, description: '1H spreads, totals, ML', icon: '⏱️', focus: 'first_half' },
-  { name: 'Totals Hunter', risk: 0.05, minBankroll: 20, description: 'Overs/unders with weather analysis', icon: '📊', focus: 'totals' },
-  { name: 'AI Contrarian', risk: 0.06, minBankroll: 20, description: 'Fade the public, find value', icon: '🤖', focus: 'contrarian' },
-  { name: 'Line Shopping Master', risk: 0.03, minBankroll: 35, description: 'Best available lines across books', icon: '⚡', focus: 'arbitrage' },
-  // High-payout options
-  { name: 'Power Parlay', risk: 0.12, minBankroll: 50, description: '5-7 legs, mixed ML + props targeting 10x-50x', icon: '💥', focus: 'power_parlay' },
-  { name: 'Longshot Ladder', risk: 0.15, minBankroll: 75, description: 'Progressive longshots stacked for 100x+ ceiling', icon: '🪜', focus: 'longshot' },
-  { name: 'VIP High Stakes', risk: 0.20, minBankroll: 100, description: 'Premium data picks with bigger stakes for 20x+', icon: '💎', focus: 'vip_high' }
+  { name: 'Safe Money', risk: 0.02, minBankroll: 50, description: 'Favorites ML + conservative spreads', icon: 'SF', focus: 'favorites' },
+  { name: 'Balanced Attack', risk: 0.05, minBankroll: 20, description: 'Mix of spreads, totals, and value plays', icon: 'BA', focus: 'balanced' },
+  { name: 'High Roller', risk: 0.10, minBankroll: 10, description: 'Aggressive underdogs, long odds', icon: 'HR', focus: 'underdogs' },
+  { name: 'QB Props', risk: 0.04, minBankroll: 25, description: 'Passing yards, TDs, completions', icon: 'QB', focus: 'qb_props' },
+  { name: 'RB Rush', risk: 0.04, minBankroll: 25, description: 'Rushing yards, TDs, attempts', icon: 'RB', focus: 'rb_props' },
+  { name: 'WR Targets', risk: 0.04, minBankroll: 25, description: 'Receptions, yards, TD catches', icon: 'WR', focus: 'wr_props' },
+  { name: 'Alternate Lines', risk: 0.06, minBankroll: 20, description: 'Alt spreads & totals with better odds', icon: 'AL', focus: 'alternates' },
+  { name: 'Same Game', risk: 0.07, minBankroll: 15, description: 'Multiple bets from single game', icon: 'SG', focus: 'sgp' },
+  { name: 'First Half', risk: 0.05, minBankroll: 20, description: '1H spreads, totals, ML', icon: 'H1', focus: 'first_half' },
+  { name: 'Totals', risk: 0.05, minBankroll: 20, description: 'Overs/unders with weather analysis', icon: 'TO', focus: 'totals' },
+  { name: 'Contrarian', risk: 0.06, minBankroll: 20, description: 'Fade the public, find value', icon: 'CT', focus: 'contrarian' },
+  { name: 'Line Shop', risk: 0.03, minBankroll: 35, description: 'Best available lines across books', icon: 'LS', focus: 'arbitrage' },
+  { name: 'Power Parlay', risk: 0.12, minBankroll: 50, description: '5-7 legs, mixed ML + props targeting 10x-50x', icon: 'PP', focus: 'power_parlay' },
+  { name: 'Longshot', risk: 0.15, minBankroll: 75, description: 'Progressive longshots stacked for 100x+ ceiling', icon: 'LS', focus: 'longshot' },
+  { name: 'VIP Stakes', risk: 0.20, minBankroll: 100, description: 'Premium picks with bigger stakes for 20x+', icon: 'VP', focus: 'vip_high' }
 ];
 
 export default function BlueprintFactory() {
@@ -459,9 +458,9 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
     <div className="space-y-6">
       {/* Control Panel */}
       <div className="card p-6">
-        <h3 className="text-2xl font-bold mb-4">⚒️ Blueprint Factory</h3>
-        <p className="text-neutral-400 mb-6">
-          Generate 12 different betting strategies simultaneously covering game lines, QB props, RB props, WR props, alternate lines, same game parlays, first half, totals, and more. AI analyzes live odds and player props to find the highest EV opportunities.
+        <h3 className="text-2xl font-bold mb-4 text-[var(--text-primary)]">Strategy Factory</h3>
+        <p className="text-[var(--text-secondary)] mb-6 text-sm leading-relaxed">
+          Generate 15 optimized betting strategies covering game lines, player props, alternate lines, same game parlays, and high-payout scenarios. Advanced analysis identifies the highest expected value opportunities from live market data.
         </p>
 
         <div className="space-y-4">
@@ -482,62 +481,62 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-400 mb-2">
-              Risk Level
+            <label className="block text-sm text-[var(--text-secondary)] mb-2">
+              Risk Profile
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => setRiskLevel('conservative')}
                 disabled={generating}
-                className={`py-2 px-4 rounded-lg font-semibold transition-colors ${
+                className={`py-2 px-4 font-medium text-sm transition-colors border ${
                   riskLevel === 'conservative' 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                    ? 'bg-[var(--success)] text-black border-[var(--success)]' 
+                    : 'bg-transparent text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--success)]'
                 }`}
               >
-                🛡️ Conservative
+                Conservative
               </button>
               <button
                 onClick={() => setRiskLevel('moderate')}
                 disabled={generating}
-                className={`py-2 px-4 rounded-lg font-semibold transition-colors ${
+                className={`py-2 px-4 font-medium text-sm transition-colors border ${
                   riskLevel === 'moderate' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]' 
+                    : 'bg-transparent text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent)]'
                 }`}
               >
-                ⚖️ Moderate
+                Moderate
               </button>
               <button
                 onClick={() => setRiskLevel('aggressive')}
                 disabled={generating}
-                className={`py-2 px-4 rounded-lg font-semibold transition-colors ${
+                className={`py-2 px-4 font-medium text-sm transition-colors border ${
                   riskLevel === 'aggressive' 
-                    ? 'bg-red-600 text-white' 
-                    : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                    ? 'bg-[var(--danger)] text-white border-[var(--danger)]' 
+                    : 'bg-transparent text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--danger)]'
                 }`}
               >
-                🔥 Aggressive
+                Aggressive
               </button>
             </div>
-            <p className="text-xs text-neutral-500 mt-2">
-              {riskLevel === 'conservative' && '50% stake reduction - safer bets'}
-              {riskLevel === 'moderate' && 'Standard stake sizing - balanced approach'}
-              {riskLevel === 'aggressive' && '50% stake increase - higher risk/reward'}
+            <p className="text-xs text-[var(--text-secondary)] mt-2">
+              {riskLevel === 'conservative' && '50% stake reduction | Lower variance'}
+              {riskLevel === 'moderate' && 'Standard stake sizing | Balanced exposure'}
+              {riskLevel === 'aggressive' && '50% stake increase | Maximum upside'}
             </p>
           </div>
 
           <button
             onClick={generateAllBlueprints}
             disabled={generating || !user}
-            className="w-full bg-gradient-to-r from-[var(--accent)] to-purple-600 py-4 rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[var(--accent)] text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--accent)]/90 transition-all"
           >
-            {generating ? `⚒️ Forging ${strategies.filter(s => bankroll >= s.minBankroll).length} Blueprints...` : !user ? '🔒 Sign In to Generate' : `⚒️ Generate All Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}
+            {generating ? `Generating ${strategies.filter(s => bankroll >= s.minBankroll).length} Strategies...` : !user ? 'Sign In Required' : `Generate Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}
           </button>
 
           {generating && (
-            <div className="text-center text-sm text-neutral-400">
-              Using dual AI (Grok + GPT-4o) to analyze game lines, QB/RB/WR props, alternate lines, SGPs, first half, totals...
+            <div className="text-center text-xs text-[var(--text-secondary)]">
+              Analyzing live market data across multiple betting strategies...
             </div>
           )}
         </div>
@@ -568,10 +567,15 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h4 className="text-lg font-bold flex items-center gap-2">
-                    {bp.icon} {bp.strategy}
-                  </h4>
-                  <p className="text-xs text-neutral-400">{bp.description}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="px-2 py-1 bg-[var(--accent)]/10 border border-[var(--accent)]/30 text-[var(--accent)] text-xs font-mono">
+                      {bp.icon}
+                    </div>
+                    <h4 className="text-base font-semibold text-[var(--text-primary)]">
+                      {bp.strategy}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-[var(--text-secondary)]">{bp.description}</p>
                 </div>
               </div>
 
@@ -626,38 +630,38 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setSelectedStrategy(bp.id)}
-                      className="text-xs bg-neutral-800 py-2 rounded hover:bg-neutral-700"
+                      className="text-xs bg-[var(--card)] border border-[var(--border)] py-2 hover:border-[var(--accent)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     >
-                      📋 View Full
+                      View Details
                     </button>
                     {savedBlueprints.includes(bp.id) ? (
                       <button
                         disabled
-                        className="text-xs bg-green-600/50 py-2 rounded cursor-not-allowed"
+                        className="text-xs bg-[var(--success)]/20 border border-[var(--success)]/50 py-2 cursor-not-allowed text-[var(--success)]"
                       >
-                        ✓ Saved
+                        Saved
                       </button>
                     ) : (
                       <button
                         onClick={() => saveBlueprint(bp)}
-                        className="text-xs bg-green-600 py-2 rounded hover:bg-green-700"
+                        className="text-xs bg-[var(--success)]/10 border border-[var(--success)] py-2 hover:bg-[var(--success)]/20 transition-colors text-[var(--success)]"
                       >
-                        💾 Save
+                        Save
                       </button>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <button
                       onClick={() => regenerateBlueprint(bp.id)}
-                      className="text-xs bg-orange-600 py-2 rounded hover:bg-orange-700"
+                      className="text-xs bg-[var(--warning)]/10 border border-[var(--warning)] py-2 hover:bg-[var(--warning)]/20 transition-colors text-[var(--warning)]"
                     >
-                      🔄 Regenerate
+                      Regenerate
                     </button>
                     <button
                       onClick={() => testInDaytona(bp)}
-                      className="text-xs bg-purple-600 py-2 rounded hover:bg-purple-700"
+                      className="text-xs bg-[var(--accent)]/10 border border-[var(--accent)] py-2 hover:bg-[var(--accent)]/20 transition-colors text-[var(--accent)]"
                     >
-                      🧪 Daytona
+                      Test
                     </button>
                   </div>
                 </>
@@ -696,10 +700,10 @@ function DetailedBlueprintModal({ blueprint, onClose }: { blueprint: Blueprint; 
           <button onClick={onClose} className="text-2xl hover:text-red-400">×</button>
         </div>
 
-        {/* AI Reasoning */}
-        <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 p-4 rounded-lg mb-4">
-          <h4 className="font-semibold mb-2">🤖 AI Strategy Analysis</h4>
-          <p className="text-sm text-neutral-300">{blueprint.aiReasoning}</p>
+        {/* Strategy Analysis */}
+        <div className="bg-[var(--card)] border border-[var(--border)] p-4 mb-4">
+          <h4 className="font-semibold mb-2 text-[var(--text-primary)] text-sm uppercase tracking-wide">Strategy Analysis</h4>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{blueprint.aiReasoning}</p>
         </div>
 
         {/* All Bets */}
@@ -708,28 +712,28 @@ function DetailedBlueprintModal({ blueprint, onClose }: { blueprint: Blueprint; 
           {blueprint.bets.map((bet, idx) => (
             <div key={idx} className="bg-black/30 p-4 rounded-lg">
               <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-[var(--accent)] rounded-full flex items-center justify-center font-bold">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 bg-[var(--accent)]/10 border border-[var(--accent)] flex items-center justify-center font-mono text-sm text-[var(--accent)]">
                     {idx + 1}
                   </div>
                   <div>
-                    <div className="font-semibold">
-                      {bet.type === 'player_prop' && '🏈 '}
+                    <div className="font-semibold text-[var(--text-primary)]">
+                      {bet.type === 'player_prop' && <span className="text-[var(--accent)] text-xs mr-2">[PROP]</span>}
                       {bet.description}
                     </div>
-                    {bet.player && <div className="text-xs text-neutral-400">{bet.player}</div>}
+                    {bet.player && <div className="text-xs text-[var(--text-secondary)]">{bet.player}</div>}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono font-bold">{bet.odds > 0 ? '+' : ''}{bet.odds}</div>
-                  <div className="text-xs text-neutral-400">{(bet.confidence * 100).toFixed(0)}% confidence</div>
+                  <div className="font-mono font-bold text-[var(--text-primary)]">{bet.odds > 0 ? '+' : ''}{bet.odds}</div>
+                  <div className="text-xs text-[var(--text-secondary)]">{(bet.confidence * 100).toFixed(0)}% conf.</div>
                 </div>
               </div>
-              <div className="text-sm text-neutral-300 ml-10">
-                <strong>💡 Analysis:</strong> {bet.reasoning}
+              <div className="text-sm text-[var(--text-secondary)] ml-10 leading-relaxed">
+                {bet.reasoning}
               </div>
-              <div className="text-xs text-green-400 ml-10 mt-1">
-                EV: +{(bet.ev * 100).toFixed(1)}%
+              <div className="text-xs text-[var(--success)] ml-10 mt-1 font-mono">
+                +{(bet.ev * 100).toFixed(1)}% EV
               </div>
             </div>
           ))}

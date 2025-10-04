@@ -218,16 +218,18 @@ export default function DashboardContent() {
 
         {blueprints.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-4xl mb-3">📋</div>
-            <h4 className="text-lg font-semibold mb-2">No Blueprints Yet</h4>
-            <p className="text-neutral-400 text-sm mb-4">
-              Head to the Forge to create your first AI-powered parlay blueprint
+            <div className="w-16 h-16 mx-auto mb-4 bg-[var(--accent)]/10 border border-[var(--accent)]/30 flex items-center justify-center">
+              <span className="text-2xl text-[var(--accent)] font-mono">[ ]</span>
+            </div>
+            <h4 className="text-lg font-semibold mb-2 text-[var(--text-primary)]">No Saved Strategies</h4>
+            <p className="text-[var(--text-secondary)] text-sm mb-4">
+              Generate your first strategy in the Factory
             </p>
             <a
               href="/forge"
-              className="inline-block bg-[var(--accent)] px-6 py-2 rounded-lg hover:opacity-90"
+              className="inline-block bg-[var(--accent)] text-white px-6 py-2 hover:bg-[var(--accent)]/90 transition-all"
             >
-              ⚒️ Create Blueprint
+              Go to Factory
             </a>
           </div>
         ) : (
@@ -270,55 +272,55 @@ export default function DashboardContent() {
       {/* Quick Actions */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className="card p-6">
-          <h4 className="font-semibold mb-3">📊 Bankroll Manager</h4>
-          <div className="space-y-3">
-            <button 
+          <h4 className="font-semibold mb-3 text-[var(--text-primary)] text-sm uppercase tracking-wide">Bankroll Manager</h4>
+          <div className="space-y-2">
+            <button
               onClick={() => setShowFundsModal('add')}
-              className="w-full text-left p-3 rounded bg-green-600/20 hover:bg-green-600/40 transition-colors border border-green-600/50"
+              className="w-full text-left p-3 bg-[var(--success)]/10 hover:bg-[var(--success)]/20 transition-colors border border-[var(--success)] text-[var(--success)] text-sm font-medium"
             >
-              + Add Funds
+              Add Funds
             </button>
-            <button 
+            <button
               onClick={() => setShowFundsModal('withdraw')}
-              className="w-full text-left p-3 rounded bg-red-600/20 hover:bg-red-600/40 transition-colors border border-red-600/50"
+              className="w-full text-left p-3 bg-[var(--danger)]/10 hover:bg-[var(--danger)]/20 transition-colors border border-[var(--danger)] text-[var(--danger)] text-sm font-medium"
             >
-              - Withdraw
+              Withdraw
             </button>
-            <a 
+            <a
               href="/history"
-              className="block w-full text-left p-3 rounded bg-black/40 hover:bg-black/60 transition-colors"
+              className="block w-full text-left p-3 bg-[var(--card)] hover:bg-[var(--card)]/60 transition-colors border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm font-medium"
             >
-              📈 View History
+              Transaction History
             </a>
           </div>
         </div>
 
         <div className="card p-6">
-          <h4 className="font-semibold mb-3">⚡ Quick Stats</h4>
+          <h4 className="font-semibold mb-3 text-[var(--text-primary)] text-sm uppercase tracking-wide">Quick Stats</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-neutral-400">Win Rate:</span>
-              <span className="font-semibold">
+              <span className="text-[var(--text-secondary)]">Win Rate:</span>
+              <span className="font-semibold text-[var(--text-primary)]">
                 {blueprints.length > 0
                   ? `${((blueprints.filter(b => b.status === 'won').length / blueprints.filter(b => b.status !== 'pending').length) * 100 || 0).toFixed(1)}%`
                   : 'N/A'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-neutral-400">Avg. Payout:</span>
-              <span className="font-semibold">
+              <span className="text-[var(--text-secondary)]">Avg. Payout:</span>
+              <span className="font-semibold text-[var(--text-primary)]">
                 {blueprints.length > 0
                   ? `${(blueprints.reduce((sum, b) => sum + b.payout, 0) / blueprints.length).toFixed(1)}x`
                   : 'N/A'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-neutral-400">Active Bets:</span>
-              <span className="font-semibold">{blueprints.filter(b => b.status === 'pending').length}</span>
+              <span className="text-[var(--text-secondary)]">Active Bets:</span>
+              <span className="font-semibold text-[var(--text-primary)]">{blueprints.filter(b => b.status === 'pending').length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-neutral-400">Total Bets:</span>
-              <span className="font-semibold">{blueprints.length}</span>
+              <span className="text-[var(--text-secondary)]">Total Bets:</span>
+              <span className="font-semibold text-[var(--text-primary)]">{blueprints.length}</span>
             </div>
           </div>
         </div>
@@ -334,8 +336,8 @@ export default function DashboardContent() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">
-                {showFundsModal === 'add' ? '💰 Add Funds' : '💸 Withdraw Funds'}
+              <h3 className="text-xl font-bold text-[var(--text-primary)]">
+                {showFundsModal === 'add' ? 'Add Funds' : 'Withdraw Funds'}
               </h3>
               <button onClick={() => setShowFundsModal(null)} className="text-2xl hover:text-red-400">×</button>
             </div>

@@ -3,27 +3,68 @@
 @tailwind utilities;
 
 :root {
-  --bg: oklch(20% 0.03 250);
-  --card: oklch(24% 0.03 250);
-  --accent: oklch(65% 0.07 240);
+  --bg: #0a0a0f;
+  --card: #13131a;
+  --accent: #4a9eff;
+  --border: #252530;
+  --text-primary: #f0f0f5;
+  --text-secondary: #9696a8;
+  --success: #00d68f;
+  --warning: #ffb800;
+  --danger: #ff4757;
 }
 
 html,
 body {
   background: var(--bg);
+  color: var(--text-primary);
 }
 
+/* Sharp, professional cards */
 .card {
-  background: linear-gradient(180deg, var(--card), oklch(18% 0.02 250));
-  border: 1px solid oklch(30% 0.02 250 / 0.5);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0;
 }
 
+/* Clean button base */
 .btn-carbon {
-  background-image: radial-gradient(
-      circle at 10px 10px,
-      rgba(255, 255, 255, 0.06) 2px,
-      transparent 0
-    ),
-    radial-gradient(circle at 30px 30px, rgba(0, 0, 0, 0.4) 2px, transparent 0);
-  background-size: 20px 20px;
+  background: linear-gradient(135deg, #1a1a24 0%, #13131a 100%);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-carbon:hover {
+  background: linear-gradient(135deg, #252530 0%, #1a1a24 100%);
+  border-color: var(--accent);
+}
+
+/* Remove all default rounded corners */
+* {
+  border-radius: 0 !important;
+}
+
+/* Sharp focus states */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Professional scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
