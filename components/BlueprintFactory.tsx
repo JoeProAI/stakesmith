@@ -506,6 +506,48 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
     }
   };
 
+  const testInDaytona = async (blueprint: Blueprint) => {
+    try {
+      console.log('🧪 Starting Monte Carlo simulation for:', blueprint.strategy);
+      
+      const res = await fetch('/api/daytona/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blueprint })
+      });
+      
+      const data = await res.json();
+      
+      if (data.error) {
+        alert(`⚠️ ${data.message || data.error}`);
+        return;
+      }
+      
+      if (data.success && data.simulation) {
+        const sim = data.simulation;
+        alert(
+          `✅ Monte Carlo Simulation Complete!\n\n` +
+          `Strategy: ${blueprint.strategy}\n` +
+          `Stake: $${blueprint.stake}\n` +
+          `Payout: ${blueprint.totalOdds}x\n\n` +
+          `📊 Results (1,000 simulations):\n` +
+          `Win Rate: ${sim.win_rate}%\n` +
+          `Expected Profit/Bet: $${sim.expected_profit_per_bet}\n` +
+          `ROI: ${sim.roi}%\n` +
+          `Total Profit (1000 bets): $${sim.total_profit_1000_bets}\n` +
+          `Max Profit: $${sim.max_profit}\n` +
+          `Max Loss: $${sim.max_loss}\n` +
+          `95% Confidence: ±$${sim.confidence_interval_95}`
+        );
+      } else {
+        alert(data.message || 'Simulation completed');
+      }
+      
+    } catch (error) {
+      console.error('❌ Simulation error:', error);
+      alert(`❌ Simulation Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -681,7 +723,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                   </div>
 
                   {/* Actions */}
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setSelectedStrategy(bp.id)}
                       className="text-xs bg-[var(--card)] border border-[var(--border)] py-2 hover:border-[var(--accent)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -700,6 +742,12 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                       className="text-xs bg-[var(--warning)]/10 border border-[var(--warning)] py-2 hover:bg-[var(--warning)]/20 transition-colors text-[var(--warning)]"
                     >
                       Regenerate
+                    </button>
+                    <button
+                      onClick={() => testInDaytona(bp)}
+                      className="text-xs bg-[var(--accent)]/10 border border-[var(--accent)] py-2 hover:bg-[var(--accent)]/20 transition-colors text-[var(--accent)]"
+                    >
+                      🧪 Test (1k MC)
                     </button>
                   </div>
                 </>
