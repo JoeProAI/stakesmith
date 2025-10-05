@@ -51,16 +51,24 @@ export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
     
     const data = (await response.json()) as OddsEvent[];
     
-    // Filter out games that already finished and sort by commence time
-    const upcomingGames = data
-      .filter(game => new Date(game.commence_time) > new Date())
+    // Include games that started within the last 4 hours (likely still in progress)
+    // and all future games. NFL games typically last 3-3.5 hours.
+    const now = new Date();
+    const fourHoursAgo = new Date(now.getTime() - (4 * 60 * 60 * 1000));
+    
+    const availableGames = data
+      .filter(game => {
+        const commenceTime = new Date(game.commence_time);
+        // Include if game starts in the future OR started within last 4 hours
+        return commenceTime > fourHoursAgo;
+      })
       .sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
     
-    if (upcomingGames.length === 0) {
-      throw new Error('No upcoming NFL games found. Check back later.');
+    if (availableGames.length === 0) {
+      throw new Error('No live or upcoming NFL games found. Check back on game day.');
     }
     
-    return upcomingGames;
+    return availableGames;
   } catch (error) {
     throw error;
   }

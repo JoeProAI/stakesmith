@@ -12,6 +12,11 @@ type SavedBlueprint = {
   legs: number;
   payout: number;
   status: 'pending' | 'won' | 'lost';
+  bets?: Array<{
+    description: string;
+    odds: number;
+    pick?: string;
+  }>;
 };
 
 export default function DashboardContent() {
@@ -24,6 +29,7 @@ export default function DashboardContent() {
   const [amount, setAmount] = useState('');
   const [editingStake, setEditingStake] = useState<string | null>(null);
   const [newStake, setNewStake] = useState<string>('');
+  const [expandedBlueprint, setExpandedBlueprint] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -342,76 +348,158 @@ export default function DashboardContent() {
           </div>
         ) : (
           <div className="space-y-3">
-            {blueprints.map((bp, idx) => (
-            <motion.div
-              key={bp.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className="flex items-center justify-between p-4 rounded border border-neutral-700 bg-black/30 hover:border-[var(--accent)] transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-4 flex-1">
-                <div
-                  className={`w-3 h-3 ${
-                    bp.status === 'pending'
-                      ? 'bg-[var(--warning)]'
-                      : bp.status === 'won'
-                      ? 'bg-[var(--success)]'
-                      : 'bg-[var(--danger)]'
-                  }`}
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-[var(--text-primary)]">{bp.name}</div>
-                  <div className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
-                    {bp.legs} legs • 
-                    {editingStake === bp.id ? (
-                      <div className="flex items-center gap-1">
-                        $<input 
-                          type="number" 
-                          value={newStake}
-                          onChange={(e) => setNewStake(e.target.value)}
-                          className="w-20 px-1 py-0.5 bg-[var(--card)] border border-[var(--accent)] text-xs"
-                          autoFocus
-                        />
-                        <button 
-                          onClick={() => updateBlueprintStake(bp.id, Number(newStake), bp.payout)}
-                          className="text-[var(--success)] hover:text-[var(--success)]/80 text-xs px-1"
-                        >
-                          ✓
-                        </button>
-                        <button 
-                          onClick={() => { setEditingStake(null); setNewStake(''); }}
-                          className="text-[var(--danger)] hover:text-[var(--danger)]/80 text-xs px-1"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={() => { setEditingStake(bp.id); setNewStake(bp.bankroll.toString()); }}
-                        className="hover:text-[var(--accent)] cursor-pointer"
-                      >
-                        ${bp.bankroll} stake
-                      </button>
-                    )}
-                    • {new Date(bp.date).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="font-bold text-[var(--accent)]">{bp.payout}x</div>
-                  <div className="text-xs text-[var(--text-secondary)]">${(bp.bankroll * bp.payout).toFixed(0)} to win</div>
-                </div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); deleteBlueprint(bp.id, bp.name); }}
-                  className="px-3 py-1 text-sm border border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition-all"
+            {blueprints.map((bp, idx) => {
+              const isExpanded = expandedBlueprint === bp.id;
+              const totalBlueprints = blueprints.length;
+              const maxBetAmount = bankroll;
+              const spreadBetAmount = Math.floor(bankroll / totalBlueprints);
+              
+              return (
+                <motion.div
+                  key={bp.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="rounded border border-neutral-700 bg-black/30 hover:border-[var(--accent)] transition-colors overflow-hidden"
                 >
-                  Delete
-                </button>
-              </div>
-            </motion.div>
-          ))}
+                  {/* Main Card Header */}
+                  <div 
+                    className="flex items-center justify-between p-4 cursor-pointer"
+                    onClick={() => setExpandedBlueprint(isExpanded ? null : bp.id)}
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div
+                        className={`w-3 h-3 ${
+                          bp.status === 'pending'
+                            ? 'bg-[var(--warning)]'
+                            : bp.status === 'won'
+                            ? 'bg-[var(--success)]'
+                            : 'bg-[var(--danger)]'
+                        }`}
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold text-[var(--text-primary)]">{bp.name}</div>
+                        <div className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
+                          {bp.legs} legs • 
+                          {editingStake === bp.id ? (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              $<input 
+                                type="number" 
+                                value={newStake}
+                                onChange={(e) => setNewStake(e.target.value)}
+                                className="w-20 px-1 py-0.5 bg-[var(--card)] border border-[var(--accent)] text-xs"
+                                autoFocus
+                              />
+                              <button 
+                                onClick={() => updateBlueprintStake(bp.id, Number(newStake), bp.payout)}
+                                className="text-[var(--success)] hover:text-[var(--success)]/80 text-xs px-1"
+                              >
+                                ✓
+                              </button>
+                              <button 
+                                onClick={() => { setEditingStake(null); setNewStake(''); }}
+                                className="text-[var(--danger)] hover:text-[var(--danger)]/80 text-xs px-1"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setEditingStake(bp.id); setNewStake(bp.bankroll.toString()); }}
+                              className="hover:text-[var(--accent)] cursor-pointer"
+                            >
+                              ${bp.bankroll} stake
+                            </button>
+                          )}
+                          • {new Date(bp.date).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-bold text-[var(--accent)]">{bp.payout.toFixed(2)}x</div>
+                        <div className="text-xs text-[var(--text-secondary)]">
+                          ${(bp.bankroll * (bp.payout - 1)).toFixed(0)} profit
+                        </div>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); deleteBlueprint(bp.id, bp.name); }}
+                        className="px-3 py-1 text-sm border border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition-all"
+                      >
+                        Delete
+                      </button>
+                      <div className="text-neutral-500 text-lg">
+                        {isExpanded ? '▼' : '▶'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded Details */}
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="border-t border-neutral-700 bg-black/50"
+                    >
+                      {/* Bankroll Allocation */}
+                      <div className="p-4 bg-neutral-900/50 border-b border-neutral-700">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded">
+                            <div className="text-xs text-blue-400 font-semibold mb-1">💰 Max Bet on This</div>
+                            <div className="text-lg font-bold text-blue-300">${maxBetAmount.toLocaleString()} stake</div>
+                            <div className="text-xs text-neutral-400 mt-1">
+                              Profit if win: ${(maxBetAmount * (bp.payout - 1)).toLocaleString()}
+                            </div>
+                            <div className="text-xs text-neutral-500">
+                              Total return: ${(maxBetAmount * bp.payout).toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded">
+                            <div className="text-xs text-purple-400 font-semibold mb-1">📊 Spread Across All ({totalBlueprints})</div>
+                            <div className="text-lg font-bold text-purple-300">${spreadBetAmount.toLocaleString()} stake</div>
+                            <div className="text-xs text-neutral-400 mt-1">
+                              Profit if win: ${(spreadBetAmount * (bp.payout - 1)).toLocaleString()}
+                            </div>
+                            <div className="text-xs text-neutral-500">
+                              Total return: ${(spreadBetAmount * bp.payout).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bet Legs */}
+                      {bp.bets && bp.bets.length > 0 && (
+                        <div className="p-4">
+                          <div className="text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">
+                            Bet Legs ({bp.bets.length})
+                          </div>
+                          <div className="space-y-2">
+                            {bp.bets.map((bet, betIdx) => (
+                              <div 
+                                key={betIdx}
+                                className="flex items-start justify-between p-2 bg-neutral-800/50 rounded text-sm"
+                              >
+                                <div className="flex-1">
+                                  <div className="text-neutral-300">
+                                    {bet.description || bet.pick}
+                                  </div>
+                                </div>
+                                <div className="text-right ml-3">
+                                  <div className="font-semibold text-[var(--accent)]">
+                                    {bet.odds > 0 ? '+' : ''}{bet.odds}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>
