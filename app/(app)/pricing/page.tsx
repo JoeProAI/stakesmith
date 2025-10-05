@@ -4,50 +4,71 @@ import { motion } from 'framer-motion';
 
 const tiers = [
   {
-    name: 'Free',
-    price: 0,
-    priceId: null,
+    name: 'Basic',
+    price: 12,
+    annualPrice: 120,
+    priceId: 'price_basic_monthly',
     features: [
-      '3 blueprints per month',
+      '15 blueprints per week',
       'Basic AI analysis',
-      'Live odds access',
+      'Live DraftKings odds',
+      'Bankroll tracking',
       'Community support'
     ],
     limitations: [
-      'No advanced analytics',
-      'Limited to 3-leg parlays',
-      'No PDF exports'
+      'No Monte Carlo simulations',
+      'No PDF exports',
+      'Standard support'
     ]
   },
   {
     name: 'Pro',
-    price: 29,
+    price: 24,
+    annualPrice: 240,
     priceId: 'price_pro_monthly',
     popular: true,
     features: [
       'Unlimited blueprints',
-      'Advanced AI reasoning',
-      'Monte Carlo simulations',
+      'Advanced AI reasoning (Grok + GPT-4o)',
+      'Monte Carlo simulations (1k iterations)',
       'PDF exports',
-      'Bankroll tracking',
+      'Advanced bankroll tracking',
       'Win/loss analytics',
-      'Email alerts for opportunities',
+      'Email alerts',
       'Priority support'
     ]
   },
   {
-    name: 'Elite',
-    price: 99,
-    priceId: 'price_elite_monthly',
+    name: 'VIP',
+    price: 59,
+    annualPrice: 590,
+    priceId: 'price_vip_monthly',
     features: [
       'Everything in Pro',
-      'Custom AI models trained on your preferences',
+      'Custom AI models trained on your style',
       'Real-time Slack/Discord alerts',
       'Advanced hedge calculator',
       'Live odds arbitrage finder',
-      'Direct access to betting experts',
+      'Exclusive VIP Discord channel',
       'White-glove support',
-      'API access'
+      'API access (coming soon)'
+    ]
+  },
+  {
+    name: 'Founder Lifetime',
+    price: 79,
+    isLifetime: true,
+    priceId: 'price_founder_lifetime',
+    badge: 'Limited: 300 spots',
+    features: [
+      'All VIP features forever',
+      'Lifetime access - pay once',
+      'Founding member badge',
+      'Early access to new features',
+      'Exclusive founder-only channel',
+      'Priority feature requests',
+      'Direct line to founders',
+      'Lock in all future features'
     ]
   }
 ];
@@ -83,24 +104,30 @@ export default function Pricing() {
         <div className="inline-flex items-center gap-3 mt-6 p-1 rounded-lg bg-neutral-800">
           <button
             onClick={() => setInterval('monthly')}
-            className={`px-6 py-2 rounded-md ${
-              interval === 'monthly' ? 'bg-[var(--accent)] text-white' : 'text-neutral-400'
+            className={`px-6 py-2 rounded-md transition-colors ${
+              interval === 'monthly' ? 'bg-[var(--accent)] text-white' : 'text-neutral-400 hover:text-white'
             }`}
           >
             Monthly
           </button>
           <button
             onClick={() => setInterval('yearly')}
-            className={`px-6 py-2 rounded-md ${
-              interval === 'yearly' ? 'bg-[var(--accent)] text-white' : 'text-neutral-400'
+            className={`px-6 py-2 rounded-md transition-colors ${
+              interval === 'yearly' ? 'bg-[var(--accent)] text-white' : 'text-neutral-400 hover:text-white'
             }`}
           >
-            Yearly <span className="text-xs text-green-400 ml-1">(Save 20%)</span>
+            Annual <span className="text-xs text-green-400 ml-1">(2 months free)</span>
           </button>
+        </div>
+
+        <div className="mt-6 px-4 py-3 bg-gradient-to-r from-yellow-600/10 to-orange-600/10 border border-yellow-600/30 rounded-lg">
+          <p className="text-sm text-yellow-200">
+            <strong>🔥 Founder Lifetime Special:</strong> First 300 members lock in all VIP features forever for just $79 one-time. No recurring fees, ever.
+          </p>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {tiers.map((tier, idx) => (
           <motion.div
             key={tier.name}
@@ -116,17 +143,37 @@ export default function Pricing() {
                 MOST POPULAR
               </div>
             )}
+            
+            {tier.badge && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-orange-600 px-4 py-1 rounded-full text-xs font-semibold">
+                {tier.badge}
+              </div>
+            )}
 
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
-              <div className="text-4xl font-bold text-[var(--accent)]">
-                ${interval === 'yearly' ? Math.floor(tier.price * 0.8) : tier.price}
-                <span className="text-lg text-neutral-400">/mo</span>
-              </div>
-              {interval === 'yearly' && tier.price > 0 && (
-                <div className="text-sm text-green-400 mt-1">
-                  Billed ${Math.floor(tier.price * 0.8 * 12)}/year
-                </div>
+              {tier.isLifetime ? (
+                <>
+                  <div className="text-4xl font-bold text-[var(--accent)]">
+                    ${tier.price}
+                    <span className="text-lg text-neutral-400"> one-time</span>
+                  </div>
+                  <div className="text-sm text-green-400 mt-1">
+                    Lifetime access • No recurring fees
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-4xl font-bold text-[var(--accent)]">
+                    ${interval === 'yearly' && tier.annualPrice ? Math.floor(tier.annualPrice / 12) : tier.price}
+                    <span className="text-lg text-neutral-400">/mo</span>
+                  </div>
+                  {interval === 'yearly' && tier.annualPrice && (
+                    <div className="text-sm text-green-400 mt-1">
+                      ${tier.annualPrice}/year • Save ${(tier.price * 12) - tier.annualPrice}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -147,13 +194,17 @@ export default function Pricing() {
 
             <button
               onClick={() => handleSubscribe(tier.priceId)}
-              className={`w-full py-3 rounded-lg font-semibold ${
-                tier.popular
+              className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                tier.popular || tier.badge
                   ? 'bg-[var(--accent)] text-white hover:opacity-90'
                   : 'bg-neutral-800 hover:bg-neutral-700'
               }`}
             >
-              {tier.price === 0 ? 'Get Started Free' : 'Subscribe Now'}
+              {tier.isLifetime 
+                ? 'Claim Lifetime Access' 
+                : interval === 'yearly' 
+                  ? 'Subscribe Annually' 
+                  : 'Subscribe Monthly'}
             </button>
           </motion.div>
         ))}
