@@ -70,6 +70,7 @@ export default function BlueprintFactory() {
   const [user, setUser] = useState<User | null>(null);
   const [excludedTeams, setExcludedTeams] = useState<string[]>([]);
   const [showTeamFilter, setShowTeamFilter] = useState(false);
+  const [gameStats, setGameStats] = useState<{upcoming: number; live: number} | null>(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
@@ -134,11 +135,19 @@ export default function BlueprintFactory() {
       }
 
       // Fetch detailed odds for top 5 games (includes player props and all markets)
-      const detailedOddsPromises = oddsData.events.slice(0, 5).map((event: any) => 
+      // Only try to fetch detailed odds for upcoming games (not live games)
+      const upcomingEvents = oddsData.events.filter((e: any) => e.gameStatus === 'upcoming');
+      const detailedOddsPromises = upcomingEvents.slice(0, 5).map((event: any) => 
         fetch(`/api/odds/${event.id}`)
-          .then(res => res.ok ? res.json() : null)
+          .then(res => {
+            if (!res.ok) {
+              console.log(`No detailed odds for ${event.home_team} vs ${event.away_team}`);
+              return null;
+            }
+            return res.json();
+          })
           .catch(err => {
-            console.log(`Detailed odds unavailable for game ${event.id} (normal if no props available)`);
+            console.log(`Skipping detailed odds for game ${event.id}`);
             return null;
           })
       );
@@ -152,6 +161,9 @@ export default function BlueprintFactory() {
       // Separate upcoming and live games
       const upcomingGames = allOdds.filter((game: any) => game.gameStatus === 'upcoming');
       const liveGames = allOdds.filter((game: any) => game.gameStatus === 'live');
+      
+      // Store game stats for display
+      setGameStats({ upcoming: upcomingGames.length, live: liveGames.length });
       
       console.log(`🎯 Strategy generation: ${upcomingGames.length} upcoming games, ${liveGames.length} live games`);
       
@@ -766,31 +778,43 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         </div>
       </div>
 
-      {/* Game Status Banner */}
-      {blueprints.length > 0 && (
-        <div className="card p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-green-400 text-lg">📅</span>
+      {/* Game Status Banner - Always show when blueprints exist */}
+      {blueprints.length > 0 && gameStats && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card p-5 bg-gradient-to-r from-blue-500/20 via-purple-500/10 to-blue-500/20 border-2 border-blue-500/50 shadow-lg shadow-blue-500/20"
+        >
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
+                  <span className="text-green-400 text-2xl font-bold">{gameStats.upcoming}</span>
+                </div>
                 <div>
-                  <div className="text-xs text-neutral-400">Upcoming Games</div>
-                  <div className="text-sm font-bold text-green-300">Recommended for betting</div>
+                  <div className="text-xs font-semibold text-green-400 uppercase tracking-wide">Upcoming Games</div>
+                  <div className="text-sm font-bold text-white">✅ Bet these - stable odds</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-red-400 text-lg animate-pulse">●</span>
+              <div className="h-12 w-px bg-neutral-700 hidden sm:block"></div>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse">
+                  <span className="text-red-400 text-2xl font-bold">{gameStats.live}</span>
+                </div>
                 <div>
-                  <div className="text-xs text-neutral-400">Live Games</div>
-                  <div className="text-sm font-bold text-red-300">Avoid - odds changing</div>
+                  <div className="text-xs font-semibold text-red-400 uppercase tracking-wide">LIVE In-Progress</div>
+                  <div className="text-sm font-bold text-white">⚠️ AVOID - odds shifting</div>
                 </div>
               </div>
             </div>
-            <div className="text-xs text-neutral-400">
-              Strategies prioritize upcoming games
+            <div className="text-xs bg-blue-500/20 border border-blue-500/30 px-4 py-2 rounded-lg">
+              <div className="font-semibold text-blue-300">✨ AI focuses on {gameStats.upcoming} upcoming games</div>
+              {gameStats.live > 0 && (
+                <div className="text-red-300 mt-1">⚠️ {gameStats.live} games already started</div>
+              )}
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Blueprint Grid */}

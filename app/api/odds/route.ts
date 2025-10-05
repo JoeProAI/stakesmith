@@ -22,6 +22,10 @@ export async function GET() {
   try {
     const events = await fetchDraftKingsOdds();
     
+    // Count game statuses
+    const upcomingCount = events.filter(e => e.gameStatus === 'upcoming').length;
+    const liveCount = events.filter(e => e.gameStatus === 'live').length;
+    
     if (cache) {
       try {
         await cache.set(key, events, { ex: 30 });
@@ -30,7 +34,14 @@ export async function GET() {
       }
     }
     
-    return new Response(JSON.stringify({ events, cached: false, count: events.length }), { 
+    return new Response(JSON.stringify({ 
+      events, 
+      cached: false, 
+      count: events.length,
+      upcomingCount,
+      liveCount,
+      message: `${upcomingCount} upcoming, ${liveCount} live`
+    }), { 
       headers: { 
         'content-type': 'application/json',
         'cache-control': 'public, s-maxage=30, stale-while-revalidate=60'
