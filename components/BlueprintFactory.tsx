@@ -31,6 +31,17 @@ type Blueprint = {
   status: 'generating' | 'ready' | 'saved';
 };
 
+const NFL_TEAMS = [
+  'Arizona Cardinals', 'Atlanta Falcons', 'Baltimore Ravens', 'Buffalo Bills',
+  'Carolina Panthers', 'Chicago Bears', 'Cincinnati Bengals', 'Cleveland Browns',
+  'Dallas Cowboys', 'Denver Broncos', 'Detroit Lions', 'Green Bay Packers',
+  'Houston Texans', 'Indianapolis Colts', 'Jacksonville Jaguars', 'Kansas City Chiefs',
+  'Las Vegas Raiders', 'Los Angeles Chargers', 'Los Angeles Rams', 'Miami Dolphins',
+  'Minnesota Vikings', 'New England Patriots', 'New Orleans Saints', 'New York Giants',
+  'New York Jets', 'Philadelphia Eagles', 'Pittsburgh Steelers', 'San Francisco 49ers',
+  'Seattle Seahawks', 'Tampa Bay Buccaneers', 'Tennessee Titans', 'Washington Commanders'
+];
+
 const strategies = [
   { name: 'Safe Money', risk: 0.02, minBankroll: 50, description: 'Favorites ML + conservative spreads', icon: 'SF', focus: 'favorites' },
   { name: 'Balanced Attack', risk: 0.05, minBankroll: 20, description: 'Mix of spreads, totals, and value plays', icon: 'BA', focus: 'balanced' },
@@ -57,6 +68,8 @@ export default function BlueprintFactory() {
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
   const [savedBlueprints, setSavedBlueprints] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
+  const [excludedTeams, setExcludedTeams] = useState<string[]>([]);
+  const [showTeamFilter, setShowTeamFilter] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
@@ -163,7 +176,7 @@ Focus: ${strategy.focus}
 Bankroll: $${bankroll}
 Risk Level: ${riskLevel}
 Stake: $${calculatedStake.toFixed(2)} (${(strategy.risk * riskMultiplier * 100).toFixed(1)}% of bankroll)
-
+${excludedTeams.length > 0 ? `\n⛔ EXCLUDED TEAMS (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
 Available games and ALL markets (including player props for top games):
 ${JSON.stringify(allOdds, null, 2)}
 
@@ -432,7 +445,7 @@ Focus: ${strategy.focus}
 Bankroll: $${bankroll}
 Risk Level: ${riskLevel}
 Stake: $${calculatedStake.toFixed(2)}
-
+${excludedTeams.length > 0 ? `\n⛔ EXCLUDED TEAMS (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
 Available games: ${JSON.stringify(allOdds, null, 2)}
 
 Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedValue.`,
@@ -631,6 +644,89 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
               {riskLevel === 'moderate' && 'Standard stake sizing | Balanced exposure'}
               {riskLevel === 'aggressive' && '50% stake increase | Maximum upside'}
             </p>
+          </div>
+
+          {/* Team Filter */}
+          <div className="border border-neutral-700 rounded-lg p-4 bg-black/20">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <label className="block text-sm font-semibold text-[var(--text-primary)]">
+                  Team Exclusions
+                </label>
+                <p className="text-xs text-neutral-400 mt-1">
+                  Remove teams you want to avoid from all strategies
+                  {excludedTeams.length > 0 && ` (${excludedTeams.length} excluded)`}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowTeamFilter(!showTeamFilter)}
+                disabled={generating}
+                className="px-3 py-1 text-xs border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors disabled:opacity-50"
+              >
+                {showTeamFilter ? 'Hide' : 'Show'} Teams
+              </button>
+            </div>
+
+            {showTeamFilter && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-64 overflow-y-auto p-2 bg-neutral-900/50 rounded"
+              >
+                {NFL_TEAMS.map((team) => (
+                  <label
+                    key={team}
+                    className="flex items-center gap-2 text-xs cursor-pointer hover:bg-neutral-800/50 p-2 rounded transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!excludedTeams.includes(team)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setExcludedTeams(excludedTeams.filter(t => t !== team));
+                        } else {
+                          setExcludedTeams([...excludedTeams, team]);
+                        }
+                      }}
+                      disabled={generating}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span className={excludedTeams.includes(team) ? 'text-neutral-500 line-through' : 'text-neutral-300'}>
+                      {team}
+                    </span>
+                  </label>
+                ))}
+              </motion.div>
+            )}
+
+            {excludedTeams.length > 0 && (
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-neutral-400">Excluded:</span>
+                {excludedTeams.map((team) => (
+                  <span
+                    key={team}
+                    className="text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded border border-red-500/30 flex items-center gap-1"
+                  >
+                    {team}
+                    <button
+                      onClick={() => setExcludedTeams(excludedTeams.filter(t => t !== team))}
+                      className="text-red-400 hover:text-red-200 font-bold"
+                      disabled={generating}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <button
+                  onClick={() => setExcludedTeams([])}
+                  disabled={generating}
+                  className="text-xs text-neutral-400 hover:text-white underline"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
           </div>
 
           <button
