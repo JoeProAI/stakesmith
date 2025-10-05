@@ -15,7 +15,44 @@ export type OddsEvent = {
       outcomes: { name: string; price: number; point?: number }[];
     }[];
   }[];
+  gameStatus?: 'upcoming' | 'live' | 'recently_finished';
+  minutesUntilStart?: number;
 };
+
+export function getGameStatus(commenceTime: string): { 
+  status: 'upcoming' | 'live' | 'recently_finished';
+  minutesUntilStart: number;
+  timeDisplay: string;
+} {
+  const now = new Date();
+  const gameTime = new Date(commenceTime);
+  const minutesUntilStart = Math.floor((gameTime.getTime() - now.getTime()) / (1000 * 60));
+  
+  let status: 'upcoming' | 'live' | 'recently_finished';
+  let timeDisplay: string;
+  
+  if (minutesUntilStart > 0) {
+    status = 'upcoming';
+    if (minutesUntilStart < 60) {
+      timeDisplay = `${minutesUntilStart}m`;
+    } else if (minutesUntilStart < 1440) { // Less than 24 hours
+      const hours = Math.floor(minutesUntilStart / 60);
+      timeDisplay = `${hours}h ${minutesUntilStart % 60}m`;
+    } else {
+      const days = Math.floor(minutesUntilStart / 1440);
+      timeDisplay = `${days}d`;
+    }
+  } else if (minutesUntilStart > -240) { // Started within last 4 hours
+    status = 'live';
+    const minutesElapsed = Math.abs(minutesUntilStart);
+    timeDisplay = `Live ${minutesElapsed}m`;
+  } else {
+    status = 'recently_finished';
+    timeDisplay = 'Finished';
+  }
+  
+  return { status, minutesUntilStart, timeDisplay };
+}
 
 // Featured markets (most common, available for all games)
 export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
@@ -51,8 +88,7 @@ export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
     
     const data = (await response.json()) as OddsEvent[];
     
-    // Include games that started within the last 4 hours (likely still in progress)
-    // and all future games. NFL games typically last 3-3.5 hours.
+    // Add status information to each game and filter out finished games
     const now = new Date();
     const fourHoursAgo = new Date(now.getTime() - (4 * 60 * 60 * 1000));
     
@@ -62,11 +98,29 @@ export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
         // Include if game starts in the future OR started within last 4 hours
         return commenceTime > fourHoursAgo;
       })
-      .sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
+      .map(game => {
+        const statusInfo = getGameStatus(game.commence_time);
+        return {
+          ...game,
+          gameStatus: statusInfo.status,
+          minutesUntilStart: statusInfo.minutesUntilStart
+        };
+      })
+      .sort((a, b) => {
+        // Sort by: upcoming first, then by start time
+        if (a.gameStatus === 'upcoming' && b.gameStatus !== 'upcoming') return -1;
+        if (a.gameStatus !== 'upcoming' && b.gameStatus === 'upcoming') return 1;
+        return new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime();
+      });
     
     if (availableGames.length === 0) {
       throw new Error('No live or upcoming NFL games found. Check back on game day.');
     }
+    
+    // Log stats for monitoring
+    const upcoming = availableGames.filter(g => g.gameStatus === 'upcoming').length;
+    const live = availableGames.filter(g => g.gameStatus === 'live').length;
+    console.log(`📊 Odds API: ${upcoming} upcoming, ${live} live games`);
     
     return availableGames;
   } catch (error) {

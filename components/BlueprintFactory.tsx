@@ -149,6 +149,15 @@ export default function BlueprintFactory() {
         ? [...detailedOdds, ...oddsData.events.slice(5, 15)]
         : oddsData.events;
 
+      // Separate upcoming and live games
+      const upcomingGames = allOdds.filter((game: any) => game.gameStatus === 'upcoming');
+      const liveGames = allOdds.filter((game: any) => game.gameStatus === 'live');
+      
+      console.log(`🎯 Strategy generation: ${upcomingGames.length} upcoming games, ${liveGames.length} live games`);
+      
+      // Prioritize upcoming games for betting strategies
+      const gamesForBetting = upcomingGames.length > 0 ? upcomingGames : allOdds;
+
       // Generate all blueprints concurrently
       const promises = viableStrategies.map(async (strategy, idx) => {
         const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * riskMultiplier * 100) / 100);
@@ -177,8 +186,9 @@ Bankroll: $${bankroll}
 Risk Level: ${riskLevel}
 Stake: $${calculatedStake.toFixed(2)} (${(strategy.risk * riskMultiplier * 100).toFixed(1)}% of bankroll)
 ${excludedTeams.length > 0 ? `\n⛔ EXCLUDED TEAMS (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
+${upcomingGames.length > 0 && liveGames.length > 0 ? `\n📊 GAME STATUS: ${upcomingGames.length} upcoming games (focus on these), ${liveGames.length} live games (included for context)\n` : ''}
 Available games and ALL markets (including player props for top games):
-${JSON.stringify(allOdds, null, 2)}
+${JSON.stringify(gamesForBetting, null, 2)}
 
 STRATEGY-SPECIFIC REQUIREMENTS:
 
@@ -431,6 +441,15 @@ Return ONLY valid JSON:
         ? [...detailedOdds, ...oddsData.events.slice(5, 15)]
         : oddsData.events;
 
+      // Separate upcoming and live games for regeneration
+      const upcomingGames = allOdds.filter((game: any) => game.gameStatus === 'upcoming');
+      const liveGames = allOdds.filter((game: any) => game.gameStatus === 'live');
+      
+      console.log(`🔄 Regenerating ${strategy.name}: ${upcomingGames.length} upcoming, ${liveGames.length} live`);
+      
+      // Prioritize upcoming games
+      const gamesForBetting = upcomingGames.length > 0 ? upcomingGames : allOdds;
+
       const riskMult = riskLevel === 'conservative' ? 0.5 : riskLevel === 'aggressive' ? 1.5 : 1;
       const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * riskMult * 100) / 100);
       
@@ -446,7 +465,8 @@ Bankroll: $${bankroll}
 Risk Level: ${riskLevel}
 Stake: $${calculatedStake.toFixed(2)}
 ${excludedTeams.length > 0 ? `\n⛔ EXCLUDED TEAMS (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
-Available games: ${JSON.stringify(allOdds, null, 2)}
+${upcomingGames.length > 0 && liveGames.length > 0 ? `\n📊 GAME STATUS: ${upcomingGames.length} upcoming games (PRIORITIZE THESE), ${liveGames.length} live games\n⚠️ FOCUS ON UPCOMING GAMES - avoid live games unless necessary\n` : ''}
+Available games: ${JSON.stringify(gamesForBetting, null, 2)}
 
 Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedValue.`,
           model: idxFromId % 2 === 0 ? 'grok' : 'gpt4o'
@@ -746,6 +766,33 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         </div>
       </div>
 
+      {/* Game Status Banner */}
+      {blueprints.length > 0 && (
+        <div className="card p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-green-400 text-lg">📅</span>
+                <div>
+                  <div className="text-xs text-neutral-400">Upcoming Games</div>
+                  <div className="text-sm font-bold text-green-300">Recommended for betting</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-red-400 text-lg animate-pulse">●</span>
+                <div>
+                  <div className="text-xs text-neutral-400">Live Games</div>
+                  <div className="text-sm font-bold text-red-300">Avoid - odds changing</div>
+                </div>
+              </div>
+            </div>
+            <div className="text-xs text-neutral-400">
+              Strategies prioritize upcoming games
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Blueprint Grid */}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         <AnimatePresence>
@@ -812,17 +859,23 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
                   {/* Bets Preview */}
                   <div className="space-y-1 mb-3 text-xs">
-                    {bp.bets.slice(0, 3).map((bet, betIdx) => (
-                      <div key={betIdx} className="flex items-center justify-between bg-gradient-to-r from-black/30 to-transparent p-2 border-l-2 border-[var(--accent)]/30">
-                        <span className="truncate flex-1 text-[var(--text-secondary)]">
-                          {bet.type === 'player_prop' && <span className="text-[var(--accent)] mr-1">[P]</span>}
-                          {bet.description}
-                        </span>
-                        <span className="font-mono font-semibold ml-2 text-[var(--text-primary)]">
-                          {bet.odds > 0 ? '+' : ''}{bet.odds}
-                        </span>
-                      </div>
-                    ))}
+                    {bp.bets.slice(0, 3).map((bet, betIdx) => {
+                      // Check if bet description contains live game indicator
+                      const isLiveGame = bet.description && (bet.description.includes('🔴') || bet.description.toLowerCase().includes('live'));
+                      
+                      return (
+                        <div key={betIdx} className="flex items-center justify-between bg-gradient-to-r from-black/30 to-transparent p-2 border-l-2 border-[var(--accent)]/30">
+                          <span className="truncate flex-1 text-[var(--text-secondary)]">
+                            {bet.type === 'player_prop' && <span className="text-[var(--accent)] mr-1">[P]</span>}
+                            {isLiveGame && <span className="text-red-500 mr-1 animate-pulse">●</span>}
+                            {bet.description}
+                          </span>
+                          <span className="font-mono font-semibold ml-2 text-[var(--text-primary)]">
+                            {bet.odds > 0 ? '+' : ''}{bet.odds}
+                          </span>
+                        </div>
+                      );
+                    })}
                     {bp.bets.length > 3 && (
                       <div className="text-center text-neutral-500">
                         +{bp.bets.length - 3} more legs
