@@ -17,6 +17,7 @@ export type OddsEvent = {
   }[];
   gameStatus?: 'upcoming' | 'live' | 'recently_finished';
   minutesUntilStart?: number;
+  gameDate?: string;
 };
 
 export function getGameStatus(commenceTime: string): { 
@@ -92,18 +93,31 @@ export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
     const now = new Date();
     const fourHoursAgo = new Date(now.getTime() - (4 * 60 * 60 * 1000));
     
+    // Only include games within the next 5 days for more accurate odds
+    const fiveDaysFromNow = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));
+    
     const availableGames = data
       .filter(game => {
         const commenceTime = new Date(game.commence_time);
-        // Include if game starts in the future OR started within last 4 hours
-        return commenceTime > fourHoursAgo;
+        // Include if:
+        // 1. Game started within last 4 hours (still in progress), OR
+        // 2. Game is upcoming AND within next 5 days (odds are more reliable)
+        const isFutureAndRecent = commenceTime > fourHoursAgo && commenceTime <= fiveDaysFromNow;
+        return isFutureAndRecent;
       })
       .map(game => {
         const statusInfo = getGameStatus(game.commence_time);
         return {
           ...game,
           gameStatus: statusInfo.status,
-          minutesUntilStart: statusInfo.minutesUntilStart
+          minutesUntilStart: statusInfo.minutesUntilStart,
+          gameDate: new Date(game.commence_time).toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+          })
         };
       })
       .sort((a, b) => {

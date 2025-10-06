@@ -761,14 +761,80 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
             )}
           </div>
 
-          <button
-            onClick={generateAllBlueprints}
-            disabled={generating || !user}
-            className="w-full bg-gradient-to-r from-[var(--accent)] to-purple-500 text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-[var(--accent)]/40 transition-all relative overflow-hidden group"
-          >
-            <span className="relative z-10">{generating ? `Generating ${strategies.filter(s => bankroll >= s.minBankroll).length} Strategies...` : !user ? 'Sign In Required' : `Generate Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}</span>
-            {!generating && <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"></div>}
-          </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <button
+              onClick={generateAllBlueprints}
+              disabled={generating || !user}
+              className="bg-gradient-to-r from-[var(--accent)] to-purple-500 text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-[var(--accent)]/40 transition-all relative overflow-hidden group"
+            >
+              <span className="relative z-10">{generating ? `Generating ${strategies.filter(s => bankroll >= s.minBankroll).length} Strategies...` : !user ? 'Sign In Required' : `Generate All Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}</span>
+              {!generating && <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"></div>}
+            </button>
+            
+            <button
+              onClick={async () => {
+                if (!user) {
+                  alert('Please sign in to generate mega parlays');
+                  return;
+                }
+                
+                // Generate mega parlay
+                setGenerating(true);
+                try {
+                  const oddsRes = await fetch('/api/odds');
+                  const oddsData = await oddsRes.json();
+                  
+                  const stake = Math.max(50, Math.floor(bankroll * 0.05)); // 5% of bankroll, min $50
+                  
+                  const response = await fetch('/api/forge/mega-parlay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      bankroll,
+                      stake,
+                      odds: oddsData.events,
+                      excludedTeams
+                    })
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    // Add as a blueprint
+                    const megaBlueprint = {
+                      id: 'mega-parlay',
+                      strategy: `💎 MEGA PARLAY (${data.parlay.payoutMultiplier})`,
+                      description: `High-payout parlay: $${stake} → $${data.parlay.estimatedPayout}`,
+                      icon: '💎',
+                      bets: data.parlay.bets,
+                      totalOdds: parseFloat(data.parlay.totalOdds),
+                      ev: data.parlay.expectedValue || 0.1,
+                      winProb: parseFloat(data.parlay.theoreticalWinProb) / 100,
+                      stake,
+                      potentialWin: data.parlay.estimatedPayout,
+                      aiReasoning: data.parlay.overallStrategy,
+                      status: 'ready' as const
+                    };
+                    
+                    setBlueprints(prev => [megaBlueprint, ...prev]);
+                    alert(`🎯 Mega Parlay Generated!\n\n${data.parlay.numLegs} legs\n$${stake} → $${data.parlay.estimatedPayout}\n${data.parlay.payoutMultiplier} payout`);
+                  } else {
+                    alert(`Error: ${data.error}`);
+                  }
+                } catch (error: any) {
+                  alert(`Failed to generate mega parlay: ${error.message}`);
+                }
+                setGenerating(false);
+              }}
+              disabled={generating || !user}
+              className="bg-gradient-to-r from-yellow-600 to-orange-600 text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-yellow-600/40 transition-all relative overflow-hidden group"
+            >
+              <span className="relative z-10">
+                💎 Generate Mega Parlay ($60 → $6k+)
+              </span>
+              {!generating && <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-yellow-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>}
+            </button>
+          </div>
 
           {generating && (
             <div className="text-center text-xs text-[var(--text-secondary)]">
@@ -992,6 +1058,11 @@ function DetailedBlueprintModal({ blueprint, onClose }: { blueprint: Blueprint; 
                       {bet.type === 'player_prop' && <span className="text-[var(--accent)] text-xs mr-2">[PROP]</span>}
                       {bet.description}
                     </div>
+                    {(bet as any).gameDate && (
+                      <div className="text-xs text-neutral-500 mt-1">
+                        📅 {(bet as any).gameDate}
+                      </div>
+                    )}
                     {bet.player && <div className="text-xs text-[var(--text-secondary)]">{bet.player}</div>}
                   </div>
                 </div>
