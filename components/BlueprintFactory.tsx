@@ -603,8 +603,11 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
   };
 
   const testInDaytona = async (blueprint: Blueprint) => {
+    const startTime = performance.now();
+    
     try {
-      console.log('🧪 Starting Monte Carlo simulation for:', blueprint.strategy);
+      console.log('🧪 Starting ADVANCED Monte Carlo simulation for:', blueprint.strategy);
+      console.log('📊 Using AI-adjusted probabilities with variance modeling...');
       
       const res = await fetch('/api/simulate', {
         method: 'POST',
@@ -613,6 +616,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       });
       
       const data = await res.json();
+      const duration = ((performance.now() - startTime) / 1000).toFixed(2);
       
       if (data.error) {
         alert(`⚠️ ${data.message || data.error}`);
@@ -635,28 +639,35 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                               sim.recommendation === 'DECENT VALUE' ? '✅ DECENT VALUE' : 
                               '⚠️ AVOID';
         
+        const correlationMsg = sim.correlationWarning ? '\n\n⚠️ WARNING: Correlated bets detected (same game)' : '';
+        
         alert(
-          `✅ Monte Carlo Complete! (${sim.numLegs} legs)\n\n` +
+          `✅ ADVANCED Monte Carlo Complete!\n` +
+          `⏱️ Completed in ${duration}s | Method: ${sim.analysisMethod || 'Variance Model'}\n\n` +
           `Strategy: ${blueprint.strategy}\n` +
           `Stake: $${blueprint.stake}\n` +
-          `Payout: ${sim.parlayOdds}x\n\n` +
-          `📊 Results (1,000 simulations):\n` +
+          `Payout: ${sim.parlayOdds}x (${sim.numLegs} legs)\n\n` +
+          `📊 Simulation Results (1,000 iterations):\n` +
           `Wins: ${sim.wins} / Losses: ${sim.losses}\n` +
           `Simulated Win Rate: ${sim.winRate}%\n` +
-          `Theoretical Win Rate: ${sim.theoreticalWinRate}%\n\n` +
-          `💰 Profitability:\n` +
+          `AI-Adjusted Win Rate: ${sim.theoreticalWinRate}%\n\n` +
+          `💰 Profitability Analysis:\n` +
           `Expected Profit/Bet: $${sim.expectedProfitPerBet}\n` +
           `ROI: ${sim.roi}%\n` +
-          `Total Profit (1000 bets): $${sim.totalProfitOver1000Bets}\n` +
+          `Total P/L (1000 bets): $${sim.totalProfitOver1000Bets}\n` +
           `Max Profit: $${sim.maxProfit}\n` +
           `Max Loss: $${sim.maxLoss}\n\n` +
-          `📉 Risk Metrics:\n` +
+          `📉 Risk & Variance Metrics:\n` +
           `Standard Deviation: $${sim.standardDeviation}\n` +
-          `95% Confidence: ±$${sim.confidence95Interval}\n` +
-          `Kelly Optimal Stake: $${sim.kellyOptimalStake}\n\n` +
-          `🎯 Recommendation: ${recommendation}` +
-          legBreakdown
+          `95% Confidence Interval: ±$${sim.confidence95Interval}\n` +
+          `Kelly Criterion Optimal: $${sim.kellyOptimalStake}\n\n` +
+          `🎯 AI RECOMMENDATION: ${recommendation}` +
+          correlationMsg +
+          legBreakdown +
+          `\n\n💡 TIP: ${sim.kellyOptimalStake > 0 ? `Kelly suggests $${sim.kellyOptimalStake} for optimal growth` : 'No positive edge detected - avoid betting'}`
         );
+        
+        console.log(`✅ Monte Carlo finished in ${duration}s - Recommendation: ${recommendation}`);
       } else {
         alert(data.message || 'Simulation completed');
       }

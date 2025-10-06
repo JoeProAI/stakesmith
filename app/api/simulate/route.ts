@@ -2,8 +2,9 @@ export const runtime = 'edge';
 export const maxDuration = 60;
 
 /**
- * MONTE CARLO SIMULATION
- * Runs 1000 iterations to calculate win probability, expected value, and confidence intervals
+ * ADVANCED MONTE CARLO SIMULATION
+ * Uses AI-powered probability adjustments based on real game analysis
+ * Runs 1000 iterations with variance modeling and correlation detection
  */
 
 export async function POST(req: Request) {
@@ -14,24 +15,53 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Invalid blueprint data' }, { status: 400 });
     }
     
+    console.log('🎲 Running ADVANCED Monte Carlo for:', blueprint.strategy);
+    console.log('📊 Analyzing', blueprint.bets.length, 'legs with AI probability adjustments...');
+    
     const stake = blueprint.stake || 100;
     const numSimulations = 1000;
     
-    // Prepare bet data with implied probabilities
-    const bets = blueprint.bets.map((bet: any) => {
+    // Prepare bet data with ADJUSTED probabilities using AI confidence + EV
+    const bets = blueprint.bets.map((bet: any, idx: number) => {
       const odds = bet.odds || -110;
+      
       // Convert American odds to implied probability
       const impliedProb = odds >= 100 
         ? 100 / (odds + 100) 
         : Math.abs(odds) / (Math.abs(odds) + 100);
       
-      // Adjust for true probability (remove vig estimate)
-      const trueProbEstimate = impliedProb * 1.05; // Add 5% back for vig
+      // Use AI's confidence rating (more accurate than just odds)
+      const aiConfidence = bet.confidence || impliedProb;
+      
+      // Factor in AI's expected value assessment
+      const evAdjustment = (bet.ev || 0) * 0.1; // Convert EV to probability boost
+      
+      // Blend implied probability with AI analysis (60% AI, 40% market)
+      let adjustedProb = (aiConfidence * 0.6) + (impliedProb * 0.4) + evAdjustment;
+      
+      // Add bet-type specific variance
+      const betType = bet.type || 'game';
+      const varianceFactors: Record<string, number> = {
+        'player_prop': 0.15,  // Props more volatile
+        'game': 0.10,         // Game lines moderate
+        'total': 0.12,        // Totals moderately volatile  
+        'ml': 0.08           // Money lines more stable
+      };
+      const variance = varianceFactors[betType] || 0.10;
+      
+      // Cap probability between 15% and 85% (realistic betting range)
+      adjustedProb = Math.max(0.15, Math.min(0.85, adjustedProb));
+      
+      console.log(`  Leg ${idx + 1}: ${bet.description?.substring(0, 40)}...`);
+      console.log(`    Market: ${(impliedProb * 100).toFixed(1)}% | AI: ${(aiConfidence * 100).toFixed(1)}% | Adjusted: ${(adjustedProb * 100).toFixed(1)}%`);
       
       return {
         description: bet.description,
         odds,
-        impliedProb: Math.min(trueProbEstimate, 0.95) // Cap at 95%
+        impliedProb: adjustedProb,
+        variance,
+        confidence: aiConfidence,
+        ev: bet.ev || 0
       };
     });
     
@@ -41,17 +71,35 @@ export async function POST(req: Request) {
       return acc * decimal;
     }, 1);
     
-    // Run Monte Carlo simulation
+    // Run ADVANCED Monte Carlo simulation with variance modeling
     let wins = 0;
     let totalProfit = 0;
     const profitDistribution: number[] = [];
     const legHitCounts = new Array(bets.length).fill(0);
     
+    console.log('🎰 Running 1,000 simulations with variance modeling...');
+    
     for (let i = 0; i < numSimulations; i++) {
-      // Simulate each leg
       let parlayHits = true;
+      
       for (let j = 0; j < bets.length; j++) {
-        const hit = Math.random() < bets[j].impliedProb;
+        const bet = bets[j];
+        
+        // Add realistic variance using normal distribution
+        // Most outcomes cluster around mean, with outliers possible
+        const randomNormal = () => {
+          let u = 0, v = 0;
+          while(u === 0) u = Math.random();
+          while(v === 0) v = Math.random();
+          return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        };
+        
+        // Adjusted probability with variance (bell curve around mean)
+        const varianceAdjusted = bet.impliedProb + (randomNormal() * bet.variance);
+        const finalProb = Math.max(0, Math.min(1, varianceAdjusted));
+        
+        const hit = Math.random() < finalProb;
+        
         if (hit) {
           legHitCounts[j]++;
         } else {
@@ -70,6 +118,8 @@ export async function POST(req: Request) {
         profitDistribution.push(-stake);
       }
     }
+    
+    console.log('✅ Simulation complete!');
     
     // Calculate metrics
     const winRate = (wins / numSimulations) * 100;
@@ -93,6 +143,36 @@ export async function POST(req: Request) {
     const kellyFraction = edge > 0 ? edge / (parlayOdds - 1) : 0;
     const kellyStake = kellyFraction > 0 ? Math.floor(stake * kellyFraction * 100) / 100 : 0;
     
+    // Detect potential correlation (same game bets)
+    const gameDescriptions = bets.map((b: any) => b.description?.toLowerCase() || '');
+    let correlationWarning = false;
+    for (let i = 0; i < gameDescriptions.length; i++) {
+      for (let j = i + 1; j < gameDescriptions.length; j++) {
+        const desc1 = gameDescriptions[i];
+        const desc2 = gameDescriptions[j];
+        // Simple team name matching
+        const teams1 = desc1.split(' vs ');
+        const teams2 = desc2.split(' vs ');
+        if (teams1.some((t: string) => teams2.some((t2: string) => t2.includes(t)))) {
+          correlationWarning = true;
+          console.log(`⚠️ Potential correlation detected: ${desc1} + ${desc2}`);
+        }
+      }
+    }
+    
+    // Recommendation with more nuance
+    let recommendation = 'AVOID';
+    if (roi > 10) recommendation = 'STRONG BET';
+    else if (roi > 5) recommendation = 'DECENT VALUE';
+    else if (roi > 0 && winRate > 8) recommendation = 'SLIGHT EDGE';
+    
+    if (correlationWarning && recommendation !== 'AVOID') {
+      recommendation += ' (⚠️ CORRELATION RISK)';
+    }
+    
+    console.log(`📊 Results: ${wins} wins (${winRate.toFixed(1)}%), ROI: ${roi.toFixed(1)}%, Kelly: $${kellyStake}`);
+    console.log(`🎯 Recommendation: ${recommendation}`);
+    
     return Response.json({
       success: true,
       simulation: {
@@ -112,7 +192,9 @@ export async function POST(req: Request) {
         numLegs: bets.length,
         parlayOdds: Math.round(parlayOdds * 100) / 100,
         kellyOptimalStake: kellyStake,
-        recommendation: roi > 5 ? 'STRONG BET' : roi > 0 ? 'DECENT VALUE' : 'AVOID'
+        recommendation,
+        correlationWarning,
+        analysisMethod: 'AI-Adjusted Variance Monte Carlo'
       },
       strategy: blueprint.strategy,
       stake
