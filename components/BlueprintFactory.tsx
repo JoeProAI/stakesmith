@@ -60,6 +60,19 @@ const strategies = [
   { name: 'VIP Stakes', risk: 0.20, minBankroll: 100, description: 'Premium picks with bigger stakes for 20x+', icon: 'VP', focus: 'vip_high' }
 ];
 
+// Helper function to check if two blueprints are duplicates (same bets, different order)
+function areBlueprintsDuplicate(bp1: Blueprint, bp2: Blueprint): boolean {
+  if (bp1.bets.length !== bp2.bets.length) return false;
+  
+  // Create sorted bet signatures for comparison
+  const getSig = (bets: BetLeg[]) => bets
+    .map(b => `${b.description}:${b.odds}`)
+    .sort()
+    .join('|');
+  
+  return getSig(bp1.bets) === getSig(bp2.bets);
+}
+
 export default function BlueprintFactory() {
   const [bankroll, setBankroll] = useState(100);
   const [riskLevel, setRiskLevel] = useState<'conservative' | 'moderate' | 'aggressive'>('moderate');
@@ -178,19 +191,39 @@ export default function BlueprintFactory() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              prompt: `You are an expert NFL bettor. Create a ${strategy.name} betting strategy.
+              prompt: `You are an expert NFL bettor with deep knowledge of game theory, statistics, and betting markets. Create a ${strategy.name} betting strategy.
+
+ANALYSIS REQUIREMENTS - DO DEEP RESEARCH:
+1. Team Form & Trends: Analyze recent performance, ATS records, home/away splits
+2. Matchup Analysis: Study offensive vs defensive rankings, pace of play, style matchups
+3. Injury Impact: Consider key player absences and their impact on lines
+4. Weather Factors: Account for wind, rain, cold affecting totals and passing games
+5. Market Intelligence: Identify line movements, public betting percentages, sharp money
+6. Situational Spots: Division games, prime time, rest advantages, lookahead spots
+7. Correlation: Avoid correlated bets (same game QB passing TDs + team total Over)
+8. Value Hunting: Find mispriced lines where your edge > market's implied probability
 
 CRITICAL: You MUST respond with ONLY valid JSON in this exact format:
 {
   "bets": [
-    {"type": "game", "description": "Team vs Team - Bet Type", "odds": -110, "reasoning": "why", "confidence": 0.7, "ev": 0.05}
+    {
+      "type": "game",
+      "description": "Team vs Team - Bet Type (with game date)",
+      "odds": -110,
+      "reasoning": "DEEP analysis - team form, matchup data, why this line is mispriced, specific stats/trends",
+      "confidence": 0.7,
+      "ev": 0.05,
+      "gameDate": "Mon, Dec 9, 8:15 PM"
+    }
   ],
-  "overallStrategy": "explanation",
+  "overallStrategy": "Comprehensive explanation of parlay construction, why these picks work together, risk profile",
   "winProbability": 0.45,
   "expectedValue": 0.08
 }
 
 DO NOT include any text before or after the JSON.
+DO NOT make duplicate picks just in different order.
+ENSURE each bet has unique value and reasoning.
 
 Strategy: ${strategy.description}
 Focus: ${strategy.focus}
@@ -198,7 +231,10 @@ Bankroll: $${bankroll}
 Risk Level: ${riskLevel}
 Stake: $${calculatedStake.toFixed(2)} (${(strategy.risk * riskMultiplier * 100).toFixed(1)}% of bankroll)
 ${excludedTeams.length > 0 ? `\n⛔ EXCLUDED TEAMS (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
-${upcomingGames.length > 0 && liveGames.length > 0 ? `\n📊 GAME STATUS: ${upcomingGames.length} upcoming games (focus on these), ${liveGames.length} live games (included for context)\n` : ''}
+${upcomingGames.length > 0 && liveGames.length > 0 ? `\n📊 GAME STATUS: ${upcomingGames.length} upcoming games (PRIORITIZE), ${liveGames.length} live games (AVOID)\n` : ''}
+
+⏰ FOCUS ON GAMES WITHIN 72 HOURS - most accurate odds!
+
 Available games and ALL markets (including player props for top games):
 ${JSON.stringify(gamesForBetting, null, 2)}
 
@@ -364,8 +400,23 @@ Return ONLY valid JSON:
         throw new Error('All strategies failed to generate. Please try again.');
       }
       
+      // Remove duplicates (same bets in different order)
+      const uniqueBlueprints: Blueprint[] = [];
+      for (const bp of validBlueprints) {
+        const isDuplicate = uniqueBlueprints.some(existing => areBlueprintsDuplicate(bp, existing));
+        if (!isDuplicate) {
+          uniqueBlueprints.push(bp);
+        } else {
+          console.log(`⚠️ Skipped duplicate: ${bp.strategy}`);
+        }
+      }
+      
+      if (uniqueBlueprints.length < validBlueprints.length) {
+        console.log(`Removed ${validBlueprints.length - uniqueBlueprints.length} duplicate strategies`);
+      }
+      
       // Sort by EV (highest first)
-      const sorted = validBlueprints.sort((a, b) => b.ev - a.ev);
+      const sorted = uniqueBlueprints.sort((a, b) => b.ev - a.ev);
       setBlueprints(sorted);
 
       // Removed auto-save - user chooses what to save via Save button
@@ -555,7 +606,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
     try {
       console.log('🧪 Starting Monte Carlo simulation for:', blueprint.strategy);
       
-      const res = await fetch('/api/daytona/test', {
+      const res = await fetch('/api/simulate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blueprint })
@@ -573,27 +624,37 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         
         // Build leg success rates display
         let legBreakdown = '';
-        if (sim.leg_success_rates && sim.leg_success_rates.length > 0) {
+        if (sim.legSuccessRates && sim.legSuccessRates.length > 0) {
           legBreakdown = '\n\n📈 Individual Leg Hit Rates:\n';
-          sim.leg_success_rates.forEach((rate: number, idx: number) => {
+          sim.legSuccessRates.forEach((rate: number, idx: number) => {
             legBreakdown += `  Leg ${idx + 1}: ${rate}%\n`;
           });
         }
         
+        const recommendation = sim.recommendation === 'STRONG BET' ? '🔥 STRONG BET 🔥' : 
+                              sim.recommendation === 'DECENT VALUE' ? '✅ DECENT VALUE' : 
+                              '⚠️ AVOID';
+        
         alert(
-          `✅ Monte Carlo Complete! (${sim.num_legs} legs)\n\n` +
+          `✅ Monte Carlo Complete! (${sim.numLegs} legs)\n\n` +
           `Strategy: ${blueprint.strategy}\n` +
           `Stake: $${blueprint.stake}\n` +
-          `Payout: ${blueprint.totalOdds}x\n\n` +
-          `📊 Results (1,000 simulations using REAL odds):\n` +
-          `Simulated Win Rate: ${sim.win_rate}%\n` +
-          `Theoretical Win Rate: ${sim.theoretical_win_rate}%\n` +
-          `Expected Profit/Bet: $${sim.expected_profit_per_bet}\n` +
+          `Payout: ${sim.parlayOdds}x\n\n` +
+          `📊 Results (1,000 simulations):\n` +
+          `Wins: ${sim.wins} / Losses: ${sim.losses}\n` +
+          `Simulated Win Rate: ${sim.winRate}%\n` +
+          `Theoretical Win Rate: ${sim.theoreticalWinRate}%\n\n` +
+          `💰 Profitability:\n` +
+          `Expected Profit/Bet: $${sim.expectedProfitPerBet}\n` +
           `ROI: ${sim.roi}%\n` +
-          `Total Profit (1000 bets): $${sim.total_profit_1000_bets}\n` +
-          `Max Profit: $${sim.max_profit}\n` +
-          `Max Loss: $${sim.max_loss}\n` +
-          `95% Confidence: ±$${sim.confidence_interval_95}` +
+          `Total Profit (1000 bets): $${sim.totalProfitOver1000Bets}\n` +
+          `Max Profit: $${sim.maxProfit}\n` +
+          `Max Loss: $${sim.maxLoss}\n\n` +
+          `📉 Risk Metrics:\n` +
+          `Standard Deviation: $${sim.standardDeviation}\n` +
+          `95% Confidence: ±$${sim.confidence95Interval}\n` +
+          `Kelly Optimal Stake: $${sim.kellyOptimalStake}\n\n` +
+          `🎯 Recommendation: ${recommendation}` +
           legBreakdown
         );
       } else {

@@ -93,16 +93,16 @@ export async function fetchDraftKingsOdds(): Promise<OddsEvent[]> {
     const now = new Date();
     const fourHoursAgo = new Date(now.getTime() - (4 * 60 * 60 * 1000));
     
-    // Only include games within the next 5 days for more accurate odds
-    const fiveDaysFromNow = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));
+    // Only include games within the next 3 days (72 hours) for most accurate odds
+    const threeDaysFromNow = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000));
     
     const availableGames = data
       .filter(game => {
         const commenceTime = new Date(game.commence_time);
         // Include if:
         // 1. Game started within last 4 hours (still in progress), OR
-        // 2. Game is upcoming AND within next 5 days (odds are more reliable)
-        const isFutureAndRecent = commenceTime > fourHoursAgo && commenceTime <= fiveDaysFromNow;
+        // 2. Game is upcoming AND within next 3 days (72 hours - most reliable odds)
+        const isFutureAndRecent = commenceTime > fourHoursAgo && commenceTime <= threeDaysFromNow;
         return isFutureAndRecent;
       })
       .map(game => {
