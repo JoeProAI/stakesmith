@@ -19,7 +19,9 @@ export async function POST(req: Request) {
     console.log('📊 Analyzing', blueprint.bets.length, 'legs with AI probability adjustments...');
     
     const stake = blueprint.stake || 100;
-    const numSimulations = 1000;
+    const numSimulations = 5000; // 5x more for accuracy
+    
+    console.time('⏱️ Monte Carlo Execution Time');
     
     // Prepare bet data with ADJUSTED probabilities using AI confidence + EV
     const bets = blueprint.bets.map((bet: any, idx: number) => {
@@ -77,15 +79,20 @@ export async function POST(req: Request) {
     const profitDistribution: number[] = [];
     const legHitCounts = new Array(bets.length).fill(0);
     
-    console.log('🎰 Running 1,000 simulations with variance modeling...');
+    console.log(`🎰 Running ${numSimulations.toLocaleString()} simulations with variance modeling...`);
     
     for (let i = 0; i < numSimulations; i++) {
       let parlayHits = true;
       
+      // Progress logging every 1000 iterations
+      if (i > 0 && i % 1000 === 0) {
+        console.log(`  ⚙️ Progress: ${i.toLocaleString()}/${numSimulations.toLocaleString()} (${((i/numSimulations)*100).toFixed(0)}%)`);
+      }
+      
       for (let j = 0; j < bets.length; j++) {
         const bet = bets[j];
         
-        // Add realistic variance using normal distribution
+        // Add realistic variance using normal distribution (Box-Muller transform)
         // Most outcomes cluster around mean, with outliers possible
         const randomNormal = () => {
           let u = 0, v = 0;
@@ -119,7 +126,8 @@ export async function POST(req: Request) {
       }
     }
     
-    console.log('✅ Simulation complete!');
+    console.timeEnd('⏱️ Monte Carlo Execution Time');
+    console.log(`✅ Simulation complete! ${wins.toLocaleString()} wins, ${(numSimulations - wins).toLocaleString()} losses`);
     
     // Calculate metrics
     const winRate = (wins / numSimulations) * 100;

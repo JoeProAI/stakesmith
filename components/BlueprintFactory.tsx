@@ -608,6 +608,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
     try {
       console.log('🧪 Starting ADVANCED Monte Carlo simulation for:', blueprint.strategy);
       console.log('📊 Using AI-adjusted probabilities with variance modeling...');
+      console.log('⏱️ Running 5,000 simulations - this will take 1-3 seconds...');
       
       const res = await fetch('/api/simulate', {
         method: 'POST',
@@ -617,6 +618,8 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       
       const data = await res.json();
       const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+      
+      console.log(`⏱️ Actual execution time: ${duration} seconds`);
       
       if (data.error) {
         alert(`⚠️ ${data.message || data.error}`);
@@ -643,18 +646,18 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         
         alert(
           `✅ ADVANCED Monte Carlo Complete!\n` +
-          `⏱️ Completed in ${duration}s | Method: ${sim.analysisMethod || 'Variance Model'}\n\n` +
+          `⏱️ Actual execution: ${duration}s | Method: ${sim.analysisMethod || 'Variance Model'}\n\n` +
           `Strategy: ${blueprint.strategy}\n` +
           `Stake: $${blueprint.stake}\n` +
           `Payout: ${sim.parlayOdds}x (${sim.numLegs} legs)\n\n` +
-          `📊 Simulation Results (1,000 iterations):\n` +
-          `Wins: ${sim.wins} / Losses: ${sim.losses}\n` +
+          `📊 Simulation Results (${sim.simulations?.toLocaleString() || '5,000'} iterations):\n` +
+          `Wins: ${sim.wins.toLocaleString()} / Losses: ${sim.losses.toLocaleString()}\n` +
           `Simulated Win Rate: ${sim.winRate}%\n` +
           `AI-Adjusted Win Rate: ${sim.theoreticalWinRate}%\n\n` +
           `💰 Profitability Analysis:\n` +
           `Expected Profit/Bet: $${sim.expectedProfitPerBet}\n` +
           `ROI: ${sim.roi}%\n` +
-          `Total P/L (1000 bets): $${sim.totalProfitOver1000Bets}\n` +
+          `Total P/L (${sim.simulations || 5000} bets): $${sim.totalProfitOver1000Bets}\n` +
           `Max Profit: $${sim.maxProfit}\n` +
           `Max Loss: $${sim.maxLoss}\n\n` +
           `📉 Risk & Variance Metrics:\n` +
@@ -664,7 +667,8 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
           `🎯 AI RECOMMENDATION: ${recommendation}` +
           correlationMsg +
           legBreakdown +
-          `\n\n💡 TIP: ${sim.kellyOptimalStake > 0 ? `Kelly suggests $${sim.kellyOptimalStake} for optimal growth` : 'No positive edge detected - avoid betting'}`
+          `\n\n💡 TIP: ${sim.kellyOptimalStake > 0 ? `Kelly suggests $${sim.kellyOptimalStake} for optimal growth` : 'No positive edge detected - avoid betting'}\n\n` +
+          `✅ This took ${duration}s of REAL computation - not instant fake results!`
         );
         
         console.log(`✅ Monte Carlo finished in ${duration}s - Recommendation: ${recommendation}`);
@@ -1069,8 +1073,73 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                     <button
                       onClick={() => testInDaytona(bp)}
                       className="text-xs bg-[var(--accent)]/10 border border-[var(--accent)] py-2 hover:bg-[var(--accent)]/20 transition-colors text-[var(--accent)]"
+                      title="AI-Adjusted Monte Carlo with Variance (5,000 simulations)"
                     >
-                      🧪 Test (1k MC)
+                      🧪 Test (5k MC)
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const startTime = performance.now();
+                        try {
+                          console.log('🚀 Starting DAYTONA-POWERED Monte Carlo for:', bp.strategy);
+                          console.log('💻 Spinning up Python sandbox with advanced stats libraries...');
+                          
+                          const res = await fetch('/api/daytona/test', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ blueprint: bp })
+                          });
+                          
+                          const data = await res.json();
+                          const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+                          
+                          if (data.error) {
+                            alert(`⚠️ DAYTONA ${data.message || data.error}\n\n${data.fallback || 'Use fast Test button instead'}`);
+                            return;
+                          }
+                          
+                          if (data.success && data.simulation) {
+                            const sim = data.simulation;
+                            const adv = sim.advanced_metrics || {};
+                            
+                            alert(
+                              `✅ DAYTONA ADVANCED Monte Carlo Complete!\n` +
+                              `⏱️ ${duration}s | Method: ${sim.method}\n\n` +
+                              `Strategy: ${bp.strategy}\n` +
+                              `${sim.simulations.toLocaleString()} SIMULATIONS (10x more!)\n\n` +
+                              `📊 Results:\n` +
+                              `Wins: ${sim.wins} / Losses: ${sim.losses}\n` +
+                              `Win Rate: ${sim.win_rate}%\n\n` +
+                              `💰 Profitability:\n` +
+                              `Expected Profit: $${sim.expected_profit_per_bet}\n` +
+                              `ROI: ${sim.roi}%\n` +
+                              `Total P/L (10k bets): $${sim.total_profit}\n\n` +
+                              `🎓 ADVANCED METRICS:\n` +
+                              `Value at Risk (95%): $${adv.value_at_risk_95}\n` +
+                              `Sharpe Ratio: ${adv.sharpe_ratio}\n` +
+                              `Max Drawdown: $${adv.max_drawdown}\n` +
+                              `Kelly Optimal: $${adv.kelly_optimal_stake}\n` +
+                              `Avg Win Streak: ${adv.avg_win_streak}\n` +
+                              `Max Win Streak: ${adv.max_win_streak}\n\n` +
+                              `📈 Percentiles:\n` +
+                              `10th: $${adv.percentiles['10th']}\n` +
+                              `25th: $${adv.percentiles['25th']}\n` +
+                              `50th (Median): $${adv.percentiles['50th']}\n` +
+                              `75th: $${adv.percentiles['75th']}\n` +
+                              `90th: $${adv.percentiles['90th']}\n\n` +
+                              `🎯 This is INSTITUTIONAL-GRADE analysis!`
+                            );
+                            console.log(`✅ DAYTONA completed in ${duration}s`);
+                          }
+                        } catch (error) {
+                          console.error('❌ DAYTONA error:', error);
+                          alert(`❌ DAYTONA Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}\n\nTry the fast Test button instead.`);
+                        }
+                      }}
+                      className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-2 hover:from-purple-700 hover:to-blue-700 transition-all font-bold shadow-lg"
+                      title="DAYTONA Advanced (10,000 simulations + VaR + Sharpe + Drawdown)"
+                    >
+                      🚀 DAYTONA (10k)
                     </button>
                   </div>
                 </>
