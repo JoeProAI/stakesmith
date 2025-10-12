@@ -81,10 +81,10 @@ num_simulations = 10000  # 10x more simulations with Daytona
 # Individual bets with enhanced data
 bets = ${JSON.stringify(betsData)}
 
-print(f"🚀 DAYTONA ADVANCED Monte Carlo - {len(bets)} legs - 10,000 simulations", file=__import__('sys').stderr)
+print(f"🚀 DAYTONA ADVANCED Monte Carlo - \${len(bets)} legs - 10,000 simulations", file=__import__('sys').stderr)
 for i, bet in enumerate(bets):
-    print(f"  Leg {i+1}: {bet['description'][:50]}", file=__import__('sys').stderr)
-    print(f"    Odds: {bet['odds']:+d} | Implied: {bet['impliedProb']*100:.1f}%", file=__import__('sys').stderr)
+    print(f"  Leg \${i+1}: \${bet['description'][:50]}", file=__import__('sys').stderr)
+    print(f"    Odds: \${bet['odds']:+d} | Implied: \${bet['impliedProb']*100:.1f}%", file=__import__('sys').stderr)
 
 # Advanced simulation with variance modeling
 wins = 0
@@ -141,7 +141,7 @@ for sim in range(num_simulations):
     
     # Progress indicator
     if (sim + 1) % 2000 == 0:
-        print(f"  Progress: {sim + 1}/{num_simulations} ({(sim+1)/num_simulations*100:.0f}%)", file=__import__('sys').stderr)
+        print(f"  Progress: \${sim + 1}/\${num_simulations} (\${(sim+1)/num_simulations*100:.0f}%)", file=__import__('sys').stderr)
 
 # Calculate metrics
 win_rate = (wins / num_simulations) * 100
@@ -199,10 +199,10 @@ percentiles = {
 }
 
 print("✅ DAYTONA Analysis Complete!", file=__import__('sys').stderr)
-print(f"  VaR (95%): \\${var_95:.2f}", file=__import__('sys').stderr)
-print(f"  Sharpe Ratio: {sharpe_ratio:.2f}", file=__import__('sys').stderr)
-print(f"  Max Drawdown: \\${max_drawdown:.2f}", file=__import__('sys').stderr)
-print(f"  Kelly Stake: \\${kelly_stake:.2f}", file=__import__('sys').stderr)
+print(f"  VaR (95%): $\${var_95:.2f}", file=__import__('sys').stderr)
+print(f"  Sharpe Ratio: \${sharpe_ratio:.2f}", file=__import__('sys').stderr)
+print(f"  Max Drawdown: $\${max_drawdown:.2f}", file=__import__('sys').stderr)
+print(f"  Kelly Stake: $\${kelly_stake:.2f}", file=__import__('sys').stderr)
 
 # Output comprehensive results as JSON
 results = {
