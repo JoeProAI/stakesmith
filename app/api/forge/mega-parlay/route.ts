@@ -92,9 +92,9 @@ CRITICAL: Return ONLY valid JSON:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'grok-beta',
+        model: 'grok-2-latest',
         messages: [
-          { role: 'system', content: 'You are an expert sports betting analyst specializing in high-payout parlays.' },
+          { role: 'system', content: 'You are an expert sports betting analyst specializing in high-payout parlays. You MUST respond with ONLY valid JSON. No markdown, no explanations, no text before or after. ONLY the raw JSON object.' },
           { role: 'user', content: grokPrompt }
         ],
         temperature: 0.7,
@@ -103,23 +103,91 @@ CRITICAL: Return ONLY valid JSON:
     });
     
     if (!grokResponse.ok) {
-      throw new Error(`Grok API error: ${grokResponse.status}`);
+      const errorText = await grokResponse.text();
+      console.error('Grok API error:', grokResponse.status, errorText);
+      return Response.json({
+        error: `Grok API error: ${grokResponse.status}`,
+        details: errorText,
+        hint: 'Check that XAI_API_KEY is correctly configured in Vercel environment variables'
+      }, { status: 500 });
     }
     
     const grokData = await grokResponse.json();
-    const grokText = grokData.choices[0].message.content;
+    const grokText = grokData.choices?.[0]?.message?.content;
     
-    // Parse JSON from response
-    let parsed;
-    try {
-      // Try to extract JSON if wrapped in markdown
-      const jsonMatch = grokText.match(/\{[\s\S]*\}/);
-      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : grokText);
-    } catch (e) {
+    if (!grokText) {
+      console.error('Empty response from Grok:', grokData);
       return Response.json({
-        error: 'Failed to parse AI response',
-        rawResponse: grokText
+        error: 'Empty response from Grok API',
+        grokResponse: JSON.stringify(grokData)
       }, { status: 500 });
+    }
+    
+    // Parse JSON from response with robust extraction
+    let parsed;
+    
+    // First, try parsing the entire response (in case AI returned pure JSON)
+    try {
+      parsed = JSON.parse(grokText.trim());
+    } catch {
+      // If that fails, try to extract JSON from markdown or text
+      const jsonMatch = grokText.match(/\{[\s\S]*\}/);
+      
+      if (!jsonMatch) {
+        console.error('No JSON found in Grok response:', grokText.substring(0, 200));
+        return Response.json({
+          error: 'Failed to parse AI response - no JSON found',
+          rawResponse: grokText.substring(0, 500)
+        }, { status: 500 });
+      }
+
+      try {
+        // Try parsing the extracted JSON
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        // Last resort: try to find the first { and match to the first complete }
+        const cleanText = grokText.trim();
+        const firstBrace = cleanText.indexOf('{');
+        
+        if (firstBrace === -1) {
+          return Response.json({
+            error: 'Failed to parse AI response - no opening brace',
+            rawResponse: cleanText.substring(0, 500)
+          }, { status: 500 });
+        }
+        
+        // Count braces to find the matching closing brace
+        let braceCount = 0;
+        let endIndex = -1;
+        for (let i = firstBrace; i < cleanText.length; i++) {
+          if (cleanText[i] === '{') braceCount++;
+          if (cleanText[i] === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              endIndex = i + 1;
+              break;
+            }
+          }
+        }
+        
+        if (endIndex === -1) {
+          return Response.json({
+            error: 'Failed to parse AI response - unmatched braces',
+            rawResponse: cleanText.substring(0, 500)
+          }, { status: 500 });
+        }
+        
+        const jsonStr = cleanText.substring(firstBrace, endIndex);
+        try {
+          parsed = JSON.parse(jsonStr);
+        } catch (finalError) {
+          console.error('Final JSON parse error:', jsonStr.substring(0, 300));
+          return Response.json({
+            error: 'Failed to parse AI response - invalid JSON syntax',
+            rawResponse: grokText.substring(0, 500)
+          }, { status: 500 });
+        }
+      }
     }
     
     // Calculate actual parlay odds
