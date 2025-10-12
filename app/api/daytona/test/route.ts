@@ -234,7 +234,6 @@ results = {
 
 print(json.dumps(results))
 `;
-`;
 
       // Upload the Python script to sandbox
       console.log('Uploading Monte Carlo script...');
