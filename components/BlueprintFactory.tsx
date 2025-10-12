@@ -154,13 +154,13 @@ export default function BlueprintFactory() {
         fetch(`/api/odds/${event.id}`)
           .then(res => {
             if (!res.ok) {
-              console.log(`No detailed odds for ${event.home_team} vs ${event.away_team}`);
+              // Silently skip - detailed odds not available for this game (expected)
               return null;
             }
             return res.json();
           })
           .catch(err => {
-            console.log(`Skipping detailed odds for game ${event.id}`);
+            // Silently skip - this is expected behavior, not an error
             return null;
           })
       );
@@ -337,19 +337,60 @@ Return ONLY valid JSON:
           }
           
           // Try to extract JSON from the response
-          const jsonMatch = aiData.text.match(/\{[\s\S]*\}/);
-          
-          if (!jsonMatch) {
-            console.error(`${strategy.name}: No JSON found in AI response:`, aiData.text.substring(0, 200));
-            throw new Error('No valid JSON in AI response');
-          }
-
           let parsed;
+          
+          // First, try parsing the entire response (in case AI returned pure JSON)
           try {
-            parsed = JSON.parse(jsonMatch[0]);
-          } catch (parseError) {
-            console.error(`${strategy.name}: JSON parse error:`, jsonMatch[0].substring(0, 200));
-            throw new Error('Failed to parse JSON');
+            parsed = JSON.parse(aiData.text.trim());
+          } catch {
+            // If that fails, try to extract JSON from markdown or text
+            const jsonMatch = aiData.text.match(/\{[\s\S]*\}/);
+            
+            if (!jsonMatch) {
+              console.error(`${strategy.name}: No JSON found in AI response:`, aiData.text.substring(0, 200));
+              throw new Error('No valid JSON in AI response');
+            }
+
+            try {
+              // Try parsing the extracted JSON
+              parsed = JSON.parse(jsonMatch[0]);
+            } catch (parseError) {
+              // Last resort: try to find the first { and match to the first complete }
+              const cleanText = aiData.text.trim();
+              const firstBrace = cleanText.indexOf('{');
+              
+              if (firstBrace === -1) {
+                console.error(`${strategy.name}: No opening brace found:`, cleanText.substring(0, 200));
+                throw new Error('Failed to parse JSON - no opening brace');
+              }
+              
+              // Count braces to find the matching closing brace
+              let braceCount = 0;
+              let endIndex = -1;
+              for (let i = firstBrace; i < cleanText.length; i++) {
+                if (cleanText[i] === '{') braceCount++;
+                if (cleanText[i] === '}') {
+                  braceCount--;
+                  if (braceCount === 0) {
+                    endIndex = i + 1;
+                    break;
+                  }
+                }
+              }
+              
+              if (endIndex === -1) {
+                console.error(`${strategy.name}: No matching closing brace:`, cleanText.substring(0, 200));
+                throw new Error('Failed to parse JSON - unmatched braces');
+              }
+              
+              const jsonStr = cleanText.substring(firstBrace, endIndex);
+              try {
+                parsed = JSON.parse(jsonStr);
+              } catch (finalError) {
+                console.error(`${strategy.name}: JSON parse error:`, jsonStr.substring(0, 300));
+                throw new Error('Failed to parse JSON - invalid syntax');
+              }
+            }
           }
           
           // Validate required fields
@@ -544,18 +585,60 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         throw new Error('AI returned empty response');
       }
       
-      const jsonMatch = aiData.text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error(`${strategy.name}: No JSON found. Response:`, aiData.text.substring(0, 300));
-        throw new Error('No valid JSON found in AI response');
-      }
-      
       let parsed;
+      
+      // First, try parsing the entire response (in case AI returned pure JSON)
       try {
-        parsed = JSON.parse(jsonMatch[0]);
-      } catch (e) {
-        console.error(`${strategy.name}: JSON parse failed:`, jsonMatch[0].substring(0, 300));
-        throw new Error('Failed to parse JSON from AI');
+        parsed = JSON.parse(aiData.text.trim());
+      } catch {
+        // If that fails, try to extract JSON from markdown or text
+        const jsonMatch = aiData.text.match(/\{[\s\S]*\}/);
+        
+        if (!jsonMatch) {
+          console.error(`${strategy.name}: No JSON found. Response:`, aiData.text.substring(0, 300));
+          throw new Error('No valid JSON found in AI response');
+        }
+        
+        try {
+          // Try parsing the extracted JSON
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch (parseError) {
+          // Last resort: try to find the first { and match to the first complete }
+          const cleanText = aiData.text.trim();
+          const firstBrace = cleanText.indexOf('{');
+          
+          if (firstBrace === -1) {
+            console.error(`${strategy.name}: No opening brace found:`, cleanText.substring(0, 200));
+            throw new Error('Failed to parse JSON - no opening brace');
+          }
+          
+          // Count braces to find the matching closing brace
+          let braceCount = 0;
+          let endIndex = -1;
+          for (let i = firstBrace; i < cleanText.length; i++) {
+            if (cleanText[i] === '{') braceCount++;
+            if (cleanText[i] === '}') {
+              braceCount--;
+              if (braceCount === 0) {
+                endIndex = i + 1;
+                break;
+              }
+            }
+          }
+          
+          if (endIndex === -1) {
+            console.error(`${strategy.name}: No matching closing brace:`, cleanText.substring(0, 200));
+            throw new Error('Failed to parse JSON - unmatched braces');
+          }
+          
+          const jsonStr = cleanText.substring(firstBrace, endIndex);
+          try {
+            parsed = JSON.parse(jsonStr);
+          } catch (finalError) {
+            console.error(`${strategy.name}: JSON parse error:`, jsonStr.substring(0, 300));
+            throw new Error('Failed to parse JSON - invalid syntax');
+          }
+        }
       }
       
       if (!parsed.bets || !Array.isArray(parsed.bets) || parsed.bets.length === 0) {
