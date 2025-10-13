@@ -24,17 +24,14 @@ export async function POST(req: NextRequest) {
 
     // Initialize Daytona SDK
     const daytona = new Daytona({
-      apiKey: daytonaKey,
-      target: process.env.DAYTONA_TARGET || 'us'
+      apiKey: daytonaKey
     });
 
     console.log('✓ Daytona SDK initialized');
 
     // Create sandbox
     console.log('Creating sandbox...');
-    const sandbox = await daytona.create({
-      language: 'python'
-    });
+    const sandbox = await daytona.create();
 
     console.log('✓ Sandbox created:', sandbox.id);
 
@@ -237,23 +234,30 @@ print(json.dumps(results))
 
       // Upload the Python script to sandbox
       console.log('Uploading Monte Carlo script...');
-      const scriptContent = Buffer.from(pythonScript);
-      await sandbox.fs.uploadFile(scriptContent, '/home/daytona/monte_carlo.py');
+      const scriptContent = Buffer.from(pythonScript, 'utf-8');
+      await sandbox.fs.uploadFile(scriptContent, 'monte_carlo.py');
       
       console.log('✓ Script uploaded');
 
       // Execute the ADVANCED Monte Carlo simulation
       console.log('🚀 Running DAYTONA Monte Carlo simulation (10,000 iterations)...');
-      const result = await sandbox.process.executeCommand('python /home/daytona/monte_carlo.py');
+      const result = await sandbox.process.executeCommand('python3 monte_carlo.py', undefined, undefined, 300);
 
       console.log('✓ Simulation complete');
+      console.log('Exit code:', result.exitCode);
       console.log('Raw output:', result.result);
 
-      // Parse the JSON output
-      const simulationResults = JSON.parse(result.result.trim());
+      if (result.exitCode !== 0) {
+        throw new Error(`Python script failed with exit code ${result.exitCode}: ${result.result}`);
+      }
+
+      // Parse the JSON output (last line should be JSON)
+      const lines = result.result.trim().split('\n');
+      const jsonLine = lines[lines.length - 1];
+      const simulationResults = JSON.parse(jsonLine);
 
       // Clean up sandbox
-      await sandbox.delete();
+      await daytona.delete(sandbox);
       console.log('✓ Sandbox cleaned up');
 
       return NextResponse.json({
@@ -268,7 +272,7 @@ print(json.dumps(results))
     } catch (execError) {
       // Clean up sandbox on error
       try {
-        await sandbox.delete();
+        await daytona.delete(sandbox);
       } catch (e) {
         console.error('Failed to clean up sandbox:', e);
       }
