@@ -554,7 +554,7 @@ Return ONLY valid JSON:
       const upcomingGames = allOdds.filter((game: any) => game.gameStatus === 'upcoming');
       const liveGames = allOdds.filter((game: any) => game.gameStatus === 'live');
       
-      console.log(`ðŸ”„ Regenerating ${strategy.name}: ${upcomingGames.length} upcoming, ${liveGames.length} live`);
+      console.log(` Regenerating ${strategy.name}: ${upcomingGames.length} upcoming, ${liveGames.length} live`);
       
       // Prioritize upcoming games
       const gamesForBetting = upcomingGames.length > 0 ? upcomingGames : allOdds;
@@ -573,8 +573,8 @@ Focus: ${strategy.focus}
 Bankroll: $${bankroll}
 Risk Level: ${riskLevel}
 Stake: $${calculatedStake.toFixed(2)}
-${excludedTeams.length > 0 ? `\nâ›” EXCLUDED TEAMS (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
-${upcomingGames.length > 0 && liveGames.length > 0 ? `\nðŸ“Š GAME STATUS: ${upcomingGames.length} upcoming games (PRIORITIZE THESE), ${liveGames.length} live games\nâš ï¸ FOCUS ON UPCOMING GAMES - avoid live games unless necessary\n` : ''}
+${excludedTeams.length > 0 ? `\n EXCLUDED TEAMS (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
+${upcomingGames.length > 0 && liveGames.length > 0 ? `\n GAME STATUS: ${upcomingGames.length} upcoming games (PRIORITIZE THESE), ${liveGames.length} live games\n FOCUS ON UPCOMING GAMES - avoid live games unless necessary\n` : ''}
 Available games: ${JSON.stringify(gamesForBetting, null, 2)}
 
 Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedValue.`,
@@ -651,7 +651,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         throw new Error('No valid bets in response');
       }
       
-      console.log(`âœ“ ${strategy.name} validated:`, parsed.bets.length, 'bets');
+      console.log(` ${strategy.name} validated:`, parsed.bets.length, 'bets');
       
       const totalOdds = parsed.bets.reduce((acc: number, bet: BetLeg) => {
         const decimal = bet.odds >= 100 ? 1 + bet.odds / 100 : 1 + 100 / Math.abs(bet.odds);
@@ -694,9 +694,9 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
     const startTime = performance.now();
     
     try {
-      console.log('ðŸ§ª Starting ADVANCED Monte Carlo simulation for:', blueprint.strategy);
-      console.log('ðŸ“Š Using AI-adjusted probabilities with variance modeling...');
-      console.log('â±ï¸ Running 5,000 simulations - this will take 1-3 seconds...');
+      console.log(' Starting ADVANCED Monte Carlo simulation for:', blueprint.strategy);
+      console.log(' Using AI-adjusted probabilities with variance modeling...');
+      console.log(' Running 5,000 simulations - this will take 1-3 seconds...');
       
       const res = await fetch('/api/simulate', {
         method: 'POST',
@@ -707,10 +707,10 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       const data = await res.json();
       const duration = ((performance.now() - startTime) / 1000).toFixed(2);
       
-      console.log(`â±ï¸ Actual execution time: ${duration} seconds`);
+      console.log(` Actual execution time: ${duration} seconds`);
       
       if (data.error) {
-        alert(`âš ï¸ ${data.message || data.error}`);
+        alert(` ${data.message || data.error}`);
         return;
       }
       
@@ -720,15 +720,15 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         // Build leg success rates display
         let legBreakdown = '';
         if (sim.legSuccessRates && sim.legSuccessRates.length > 0) {
-          legBreakdown = '\n\nðŸ“ˆ Individual Leg Hit Rates:\n';
+          legBreakdown = '\n\n Individual Leg Hit Rates:\n';
           sim.legSuccessRates.forEach((rate: number, idx: number) => {
             legBreakdown += `  Leg ${idx + 1}: ${rate}%\n`;
           });
         }
         
-        const recommendation = sim.recommendation === 'STRONG BET' ? 'ðŸ”¥ STRONG BET ðŸ”¥' : 
-                              sim.recommendation === 'DECENT VALUE' ? 'âœ… DECENT VALUE' : 
-                              'âš ï¸ AVOID';
+        const recommendation = sim.recommendation === 'STRONG BET' ? ' STRONG BET ' : 
+                              sim.recommendation === 'DECENT VALUE' ? ' DECENT VALUE' : 
+                              ' AVOID';
         
         // Show results in modal instead of tiny alert
         setMonteCarloResults({
@@ -741,14 +741,14 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         });
         setShowMonteCarloModal(true);
         
-        console.log(`âœ… Monte Carlo finished in ${duration}s - Recommendation: ${recommendation}`);
+        console.log(` Monte Carlo finished in ${duration}s - Recommendation: ${recommendation}`);
       } else {
         alert(data.message || 'Simulation completed');
       }
       
     } catch (error) {
-      console.error('âŒ Simulation error:', error);
-      alert(`âŒ Simulation Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(' Simulation error:', error);
+      alert(` Simulation Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -892,7 +892,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                       className="text-red-400 hover:text-red-200 font-bold"
                       disabled={generating}
                     >
-                      Ã—
+                      
                     </button>
                   </span>
                 ))}
@@ -949,9 +949,9 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                     // Add as a blueprint
                     const megaBlueprint = {
                       id: 'mega-parlay',
-                      strategy: `ðŸ’Ž MEGA PARLAY (${data.parlay.payoutMultiplier})`,
-                      description: `High-payout parlay: $${stake} â†’ $${data.parlay.estimatedPayout}`,
-                      icon: 'ðŸ’Ž',
+                      strategy: ` MEGA PARLAY (${data.parlay.payoutMultiplier})`,
+                      description: `High-payout parlay: $${stake}  $${data.parlay.estimatedPayout}`,
+                      icon: '',
                       bets: data.parlay.bets,
                       totalOdds: parseFloat(data.parlay.totalOdds),
                       ev: data.parlay.expectedValue || 0.1,
@@ -963,7 +963,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                     };
                     
                     setBlueprints(prev => [megaBlueprint, ...prev]);
-                    alert(`ðŸŽ¯ Mega Parlay Generated!\n\n${data.parlay.numLegs} legs\n$${stake} â†’ $${data.parlay.estimatedPayout}\n${data.parlay.payoutMultiplier} payout`);
+                    alert(` Mega Parlay Generated!\n\n${data.parlay.numLegs} legs\n$${stake}  $${data.parlay.estimatedPayout}\n${data.parlay.payoutMultiplier} payout`);
                   } else {
                     alert(`Error: ${data.error}`);
                   }
@@ -976,7 +976,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
               className="bg-gradient-to-r from-yellow-600 to-orange-600 text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-yellow-600/40 transition-all relative overflow-hidden group"
             >
               <span className="relative z-10">
-                ðŸ’Ž Generate Mega Parlay ($60 â†’ $6k+)
+                 Generate Mega Parlay ($60  $6k+)
               </span>
               {!generating && <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-yellow-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>}
             </button>
@@ -1005,7 +1005,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-green-400 uppercase tracking-wide">Upcoming Games</div>
-                  <div className="text-sm font-bold text-white">âœ… Bet these - stable odds</div>
+                  <div className="text-sm font-bold text-white"> Bet these - stable odds</div>
                 </div>
               </div>
               <div className="h-12 w-px bg-neutral-700 hidden sm:block"></div>
@@ -1015,14 +1015,14 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-red-400 uppercase tracking-wide">LIVE In-Progress</div>
-                  <div className="text-sm font-bold text-white">âš ï¸ AVOID - odds shifting</div>
+                  <div className="text-sm font-bold text-white"> AVOID - odds shifting</div>
                 </div>
               </div>
             </div>
             <div className="text-xs bg-blue-500/20 border border-blue-500/30 px-4 py-2 rounded-lg">
-              <div className="font-semibold text-blue-300">âœ¨ AI focuses on {gameStats.upcoming} upcoming games</div>
+              <div className="font-semibold text-blue-300"> AI focuses on {gameStats.upcoming} upcoming games</div>
               {gameStats.live > 0 && (
-                <div className="text-red-300 mt-1">âš ï¸ {gameStats.live} games already started</div>
+                <div className="text-red-300 mt-1"> {gameStats.live} games already started</div>
               )}
             </div>
           </div>
@@ -1097,13 +1097,13 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                   <div className="space-y-1 mb-3 text-xs">
                     {bp.bets.slice(0, 3).map((bet, betIdx) => {
                       // Check if bet description contains live game indicator
-                      const isLiveGame = bet.description && (bet.description.includes('ðŸ”´') || bet.description.toLowerCase().includes('live'));
+                      const isLiveGame = bet.description && (bet.description.includes('') || bet.description.toLowerCase().includes('live'));
                       
                       return (
                         <div key={betIdx} className="flex items-center justify-between bg-gradient-to-r from-black/30 to-transparent p-2 border-l-2 border-[var(--accent)]/30">
                           <span className="truncate flex-1 text-[var(--text-secondary)]">
                             {bet.type === 'player_prop' && <span className="text-[var(--accent)] mr-1">[P]</span>}
-                            {isLiveGame && <span className="text-red-500 mr-1 animate-pulse">â—</span>}
+                            {isLiveGame && <span className="text-red-500 mr-1 animate-pulse"></span>}
                             {bet.description}
                           </span>
                           <span className="font-mono font-semibold ml-2 text-[var(--text-primary)]">
@@ -1145,14 +1145,14 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                       className="text-xs bg-[var(--accent)]/10 border border-[var(--accent)] py-2 hover:bg-[var(--accent)]/20 transition-colors text-[var(--accent)]"
                       title="AI-Adjusted Monte Carlo with Variance (5,000 simulations)"
                     >
-                      ðŸ§ª Test (5k MC)
+                       Test (5k MC)
                     </button>
                     <button
                       onClick={async () => {
                         const startTime = performance.now();
                         try {
-                          console.log('ðŸš€ Starting DAYTONA-POWERED Monte Carlo for:', bp.strategy);
-                          console.log('ðŸ’» Spinning up Python sandbox with advanced stats libraries...');
+                          console.log(' Starting DAYTONA-POWERED Monte Carlo for:', bp.strategy);
+                          console.log(' Spinning up Python sandbox with advanced stats libraries...');
                           
                           const res = await fetch('/api/daytona/test', {
                             method: 'POST',
@@ -1164,7 +1164,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                           const duration = ((performance.now() - startTime) / 1000).toFixed(2);
                           
                           if (data.error) {
-                            alert(`âš ï¸ DAYTONA ${data.message || data.error}\n\n${data.fallback || 'Use fast Test button instead'}`);
+                            alert(` DAYTONA ${data.message || data.error}\n\n${data.fallback || 'Use fast Test button instead'}`);
                             return;
                           }
                           
@@ -1181,17 +1181,17 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                               isDaytona: true
                             });
                             setShowMonteCarloModal(true);
-                            console.log(`âœ… DAYTONA completed in ${duration}s`);
+                            console.log(` DAYTONA completed in ${duration}s`);
                           }
                         } catch (error) {
-                          console.error('âŒ DAYTONA error:', error);
-                          alert(`âŒ DAYTONA Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}\n\nTry the fast Test button instead.`);
+                          console.error(' DAYTONA error:', error);
+                          alert(` DAYTONA Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}\n\nTry the fast Test button instead.`);
                         }
                       }}
                       className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-2 hover:from-purple-700 hover:to-blue-700 transition-all font-bold shadow-lg"
                       title="DAYTONA Advanced (10,000 simulations + VaR + Sharpe + Drawdown)"
                     >
-                      ðŸš€ DAYTONA (10k)
+                       DAYTONA (10k)
                     </button>
                   </div>
                 </>
@@ -1221,17 +1221,17 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
             <div className="sticky top-0 bg-gradient-to-r from-[var(--accent)]/20 to-purple-500/20 border-b border-[var(--accent)]/30 p-6 flex justify-between items-start">
               <div>
                 <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-1">
-                  {monteCarloResults.isDaytona ? 'ðŸš€ DAYTONA Advanced Analysis' : 'ðŸ§ª Monte Carlo Simulation Results'}
+                  {monteCarloResults.isDaytona ? ' DAYTONA Advanced Analysis' : ' Monte Carlo Simulation Results'}
                 </h2>
                 <p className="text-sm text-[var(--text-secondary)]">
-                  â±ï¸ Execution Time: {monteCarloResults.duration}s | Strategy: {monteCarloResults.blueprint.strategy}
+                   Execution Time: {monteCarloResults.duration}s | Strategy: {monteCarloResults.blueprint.strategy}
                 </p>
               </div>
               <button
                 onClick={() => setShowMonteCarloModal(false)}
                 className="text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
-                âœ•
+                
               </button>
             </div>
 
@@ -1263,14 +1263,14 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                     'bg-red-500/10 border-red-500'
                   }`}>
                     <div className="text-center text-2xl font-bold">
-                      ðŸŽ¯ {monteCarloResults.recommendation}
+                       {monteCarloResults.recommendation}
                     </div>
                   </div>
 
                   {/* Simulation Results */}
                   <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--accent)]/20">
                     <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">
-                      ðŸ“Š Simulation Results ({monteCarloResults.simulation.simulations?.toLocaleString() || '5,000'} iterations)
+                       Simulation Results ({monteCarloResults.simulation.simulations?.toLocaleString() || '5,000'} iterations)
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -1296,7 +1296,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
                   {/* Profitability */}
                   <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--accent)]/20">
-                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">ðŸ’° Profitability Analysis</h3>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4"> Profitability Analysis</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="text-sm text-[var(--text-secondary)]">Expected Profit/Bet</div>
@@ -1321,7 +1321,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
                   {/* Risk Metrics */}
                   <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--accent)]/20">
-                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">ðŸ“‰ Risk & Variance Metrics</h3>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4"> Risk & Variance Metrics</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="text-sm text-[var(--text-secondary)]">Standard Deviation</div>
@@ -1329,15 +1329,15 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                       </div>
                       <div>
                         <div className="text-sm text-[var(--text-secondary)]">95% Confidence Interval</div>
-                        <div className="text-xl font-bold text-[var(--text-primary)]">Â±${monteCarloResults.simulation.confidence95Interval}</div>
+                        <div className="text-xl font-bold text-[var(--text-primary)]">${monteCarloResults.simulation.confidence95Interval}</div>
                       </div>
                       <div className="col-span-2">
                         <div className="text-sm text-[var(--text-secondary)]">Kelly Criterion Optimal Stake</div>
                         <div className="text-2xl font-bold text-[var(--accent)]">${monteCarloResults.simulation.kellyOptimalStake}</div>
                         {monteCarloResults.simulation.kellyOptimalStake > 0 ? (
-                          <div className="text-xs text-green-400 mt-1">âœ… Positive edge detected - Kelly suggests this stake for optimal growth</div>
+                          <div className="text-xs text-green-400 mt-1"> Positive edge detected - Kelly suggests this stake for optimal growth</div>
                         ) : (
-                          <div className="text-xs text-red-400 mt-1">âš ï¸ No positive edge detected - avoid betting</div>
+                          <div className="text-xs text-red-400 mt-1"> No positive edge detected - avoid betting</div>
                         )}
                       </div>
                     </div>
@@ -1346,7 +1346,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                   {/* Leg Breakdown */}
                   {monteCarloResults.legBreakdown && (
                     <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--accent)]/20">
-                      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">ðŸ“ˆ Individual Leg Hit Rates</h3>
+                      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4"> Individual Leg Hit Rates</h3>
                       <div className="space-y-2">
                         {monteCarloResults.simulation.legSuccessRates?.map((rate: number, idx: number) => (
                           <div key={idx} className="flex items-center gap-3">
@@ -1368,7 +1368,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                   {/* Warnings */}
                   {monteCarloResults.simulation.correlationWarning && (
                     <div className="bg-red-500/10 border-2 border-red-500 p-4 rounded-lg">
-                      <div className="text-red-400 font-bold">âš ï¸ WARNING: Correlated bets detected</div>
+                      <div className="text-red-400 font-bold"> WARNING: Correlated bets detected</div>
                       <div className="text-sm text-red-300 mt-1">Same-game bets reduce actual win probability</div>
                     </div>
                   )}
@@ -1396,7 +1396,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
 
                   {/* Advanced Metrics */}
                   <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 p-6 rounded-lg border border-purple-500/30">
-                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">ðŸŽ“ INSTITUTIONAL-GRADE METRICS</h3>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4"> INSTITUTIONAL-GRADE METRICS</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="text-sm text-[var(--text-secondary)]">Value at Risk (95%)</div>
@@ -1432,7 +1432,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                   {/* Percentiles */}
                   {monteCarloResults.simulation.advanced_metrics?.percentiles && (
                     <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-purple-500/20">
-                      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">ðŸ“ˆ Outcome Distribution</h3>
+                      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4"> Outcome Distribution</h3>
                       <div className="space-y-3">
                         {Object.entries(monteCarloResults.simulation.advanced_metrics.percentiles).map(([key, value]) => (
                           <div key={key} className="flex justify-between items-center">
@@ -1451,7 +1451,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
               {/* Footer */}
               <div className="bg-[var(--accent)]/10 p-4 rounded-lg border border-[var(--accent)]/30 text-center">
                 <div className="text-sm text-[var(--text-secondary)]">
-                  âœ… This analysis took {monteCarloResults.duration}s of REAL computation
+                   This analysis took {monteCarloResults.duration}s of REAL computation
                 </div>
               </div>
             </div>
@@ -1477,7 +1477,7 @@ function DetailedBlueprintModal({ blueprint, onClose }: { blueprint: Blueprint; 
             <h3 className="text-2xl font-bold">{blueprint.strategy}</h3>
             <p className="text-neutral-400">{blueprint.description}</p>
           </div>
-          <button onClick={onClose} className="text-2xl hover:text-red-400">Ã—</button>
+          <button onClick={onClose} className="text-2xl hover:text-red-400"></button>
         </div>
 
         {/* Strategy Analysis */}
@@ -1503,7 +1503,7 @@ function DetailedBlueprintModal({ blueprint, onClose }: { blueprint: Blueprint; 
                     </div>
                     {(bet as any).gameDate && (
                       <div className="text-xs text-neutral-500 mt-1">
-                        ðŸ“… {(bet as any).gameDate}
+                         {(bet as any).gameDate}
                       </div>
                     )}
                     {bet.player && <div className="text-xs text-[var(--text-secondary)]">{bet.player}</div>}
