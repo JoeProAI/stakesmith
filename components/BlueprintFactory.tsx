@@ -74,6 +74,7 @@ function areBlueprintsDuplicate(bp1: Blueprint, bp2: Blueprint): boolean {
 }
 
 export default function BlueprintFactory() {
+  // State management
   const [bankroll, setBankroll] = useState(100);
   const [riskLevel, setRiskLevel] = useState<'conservative' | 'moderate' | 'aggressive'>('moderate');
   const [generating, setGenerating] = useState(false);
@@ -84,8 +85,10 @@ export default function BlueprintFactory() {
   const [excludedTeams, setExcludedTeams] = useState<string[]>([]);
   const [showTeamFilter, setShowTeamFilter] = useState(false);
   const [gameStats, setGameStats] = useState<{upcoming: number; live: number} | null>(null);
+  
+  // Monte Carlo modal state
   const [monteCarloResults, setMonteCarloResults] = useState<any>(null);
-  const [showMonteCarloModal, setShowMonteCarloModal] = useState(false);
+  const [showMonteCarloModal, setShowMonteCarloModal] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
