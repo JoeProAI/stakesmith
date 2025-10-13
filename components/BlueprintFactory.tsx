@@ -84,6 +84,8 @@ export default function BlueprintFactory() {
   const [excludedTeams, setExcludedTeams] = useState<string[]>([]);
   const [showTeamFilter, setShowTeamFilter] = useState(false);
   const [gameStats, setGameStats] = useState<{upcoming: number; live: number} | null>(null);
+  const [monteCarloResults, setMonteCarloResults] = useState<any>(null);
+  const [showMonteCarloModal, setShowMonteCarloModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
@@ -725,34 +727,16 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                               sim.recommendation === 'DECENT VALUE' ? '✅ DECENT VALUE' : 
                               '⚠️ AVOID';
         
-        const correlationMsg = sim.correlationWarning ? '\n\n⚠️ WARNING: Correlated bets detected (same game)' : '';
-        
-        alert(
-          `✅ ADVANCED Monte Carlo Complete!\n` +
-          `⏱️ Actual execution: ${duration}s | Method: ${sim.analysisMethod || 'Variance Model'}\n\n` +
-          `Strategy: ${blueprint.strategy}\n` +
-          `Stake: $${blueprint.stake}\n` +
-          `Payout: ${sim.parlayOdds}x (${sim.numLegs} legs)\n\n` +
-          `📊 Simulation Results (${sim.simulations?.toLocaleString() || '5,000'} iterations):\n` +
-          `Wins: ${sim.wins.toLocaleString()} / Losses: ${sim.losses.toLocaleString()}\n` +
-          `Simulated Win Rate: ${sim.winRate}%\n` +
-          `AI-Adjusted Win Rate: ${sim.theoreticalWinRate}%\n\n` +
-          `💰 Profitability Analysis:\n` +
-          `Expected Profit/Bet: $${sim.expectedProfitPerBet}\n` +
-          `ROI: ${sim.roi}%\n` +
-          `Total P/L (${sim.simulations || 5000} bets): $${sim.totalProfitOver1000Bets}\n` +
-          `Max Profit: $${sim.maxProfit}\n` +
-          `Max Loss: $${sim.maxLoss}\n\n` +
-          `📉 Risk & Variance Metrics:\n` +
-          `Standard Deviation: $${sim.standardDeviation}\n` +
-          `95% Confidence Interval: ±$${sim.confidence95Interval}\n` +
-          `Kelly Criterion Optimal: $${sim.kellyOptimalStake}\n\n` +
-          `🎯 AI RECOMMENDATION: ${recommendation}` +
-          correlationMsg +
-          legBreakdown +
-          `\n\n💡 TIP: ${sim.kellyOptimalStake > 0 ? `Kelly suggests $${sim.kellyOptimalStake} for optimal growth` : 'No positive edge detected - avoid betting'}\n\n` +
-          `✅ This took ${duration}s of REAL computation - not instant fake results!`
-        );
+        // Show results in modal instead of tiny alert
+        setMonteCarloResults({
+          duration,
+          blueprint,
+          simulation: sim,
+          recommendation,
+          legBreakdown,
+          isDaytona: false
+        });
+        setShowMonteCarloModal(true);
         
         console.log(`✅ Monte Carlo finished in ${duration}s - Recommendation: ${recommendation}`);
       } else {
@@ -1183,35 +1167,17 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                           
                           if (data.success && data.simulation) {
                             const sim = data.simulation;
-                            const adv = sim.advanced_metrics || {};
                             
-                            alert(
-                              `✅ DAYTONA ADVANCED Monte Carlo Complete!\n` +
-                              `⏱️ ${duration}s | Method: ${sim.method}\n\n` +
-                              `Strategy: ${bp.strategy}\n` +
-                              `${sim.simulations.toLocaleString()} SIMULATIONS (10x more!)\n\n` +
-                              `📊 Results:\n` +
-                              `Wins: ${sim.wins} / Losses: ${sim.losses}\n` +
-                              `Win Rate: ${sim.win_rate}%\n\n` +
-                              `💰 Profitability:\n` +
-                              `Expected Profit: $${sim.expected_profit_per_bet}\n` +
-                              `ROI: ${sim.roi}%\n` +
-                              `Total P/L (10k bets): $${sim.total_profit}\n\n` +
-                              `🎓 ADVANCED METRICS:\n` +
-                              `Value at Risk (95%): $${adv.value_at_risk_95}\n` +
-                              `Sharpe Ratio: ${adv.sharpe_ratio}\n` +
-                              `Max Drawdown: $${adv.max_drawdown}\n` +
-                              `Kelly Optimal: $${adv.kelly_optimal_stake}\n` +
-                              `Avg Win Streak: ${adv.avg_win_streak}\n` +
-                              `Max Win Streak: ${adv.max_win_streak}\n\n` +
-                              `📈 Percentiles:\n` +
-                              `10th: $${adv.percentiles['10th']}\n` +
-                              `25th: $${adv.percentiles['25th']}\n` +
-                              `50th (Median): $${adv.percentiles['50th']}\n` +
-                              `75th: $${adv.percentiles['75th']}\n` +
-                              `90th: $${adv.percentiles['90th']}\n\n` +
-                              `🎯 This is INSTITUTIONAL-GRADE analysis!`
-                            );
+                            // Show DAYTONA results in modal
+                            setMonteCarloResults({
+                              duration,
+                              blueprint: bp,
+                              simulation: sim,
+                              recommendation: 'DAYTONA ANALYSIS',
+                              legBreakdown: '',
+                              isDaytona: true
+                            });
+                            setShowMonteCarloModal(true);
                             console.log(`✅ DAYTONA completed in ${duration}s`);
                           }
                         } catch (error) {
@@ -1325,6 +1291,256 @@ function DetailedBlueprintModal({ blueprint, onClose }: { blueprint: Blueprint; 
           </div>
         </div>
       </motion.div>
+
+      {/* Monte Carlo Results Modal */}
+      {showMonteCarloModal && monteCarloResults && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[var(--bg-secondary)] border border-[var(--accent)] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-[var(--accent)]/20 to-purple-500/20 border-b border-[var(--accent)]/30 p-6 flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-1">
+                  {monteCarloResults.isDaytona ? '🚀 DAYTONA Advanced Analysis' : '🧪 Monte Carlo Simulation Results'}
+                </h2>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  ⏱️ Execution Time: {monteCarloResults.duration}s | Strategy: {monteCarloResults.blueprint.strategy}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowMonteCarloModal(false)}
+                className="text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {!monteCarloResults.isDaytona ? (
+                /* Standard Monte Carlo Results */
+                <>
+                  {/* Basic Info */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-[var(--bg-primary)] p-4 rounded-lg border border-[var(--accent)]/20">
+                      <div className="text-xs text-[var(--text-secondary)] mb-1">Stake</div>
+                      <div className="text-2xl font-bold text-[var(--accent)]">${monteCarloResults.blueprint.stake}</div>
+                    </div>
+                    <div className="bg-[var(--bg-primary)] p-4 rounded-lg border border-[var(--accent)]/20">
+                      <div className="text-xs text-[var(--text-secondary)] mb-1">Payout Multiplier</div>
+                      <div className="text-2xl font-bold text-green-400">{monteCarloResults.simulation.parlayOdds}x</div>
+                    </div>
+                    <div className="bg-[var(--bg-primary)] p-4 rounded-lg border border-[var(--accent)]/20">
+                      <div className="text-xs text-[var(--text-secondary)] mb-1">Legs</div>
+                      <div className="text-2xl font-bold text-blue-400">{monteCarloResults.simulation.numLegs}</div>
+                    </div>
+                  </div>
+
+                  {/* Recommendation Banner */}
+                  <div className={`p-4 rounded-lg border-2 ${
+                    monteCarloResults.recommendation.includes('STRONG') ? 'bg-green-500/10 border-green-500' :
+                    monteCarloResults.recommendation.includes('DECENT') ? 'bg-blue-500/10 border-blue-500' :
+                    'bg-red-500/10 border-red-500'
+                  }`}>
+                    <div className="text-center text-2xl font-bold">
+                      🎯 {monteCarloResults.recommendation}
+                    </div>
+                  </div>
+
+                  {/* Simulation Results */}
+                  <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--accent)]/20">
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">
+                      📊 Simulation Results ({monteCarloResults.simulation.simulations?.toLocaleString() || '5,000'} iterations)
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Wins / Losses</div>
+                        <div className="text-xl font-bold text-[var(--text-primary)]">
+                          {monteCarloResults.simulation.wins.toLocaleString()} / {monteCarloResults.simulation.losses.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Simulated Win Rate</div>
+                        <div className="text-xl font-bold text-[var(--accent)]">{monteCarloResults.simulation.winRate}%</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">AI-Adjusted Win Rate</div>
+                        <div className="text-xl font-bold text-purple-400">{monteCarloResults.simulation.theoreticalWinRate}%</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Method</div>
+                        <div className="text-sm font-semibold text-[var(--text-primary)]">{monteCarloResults.simulation.analysisMethod}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profitability */}
+                  <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--accent)]/20">
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">💰 Profitability Analysis</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Expected Profit/Bet</div>
+                        <div className="text-xl font-bold text-green-400">${monteCarloResults.simulation.expectedProfitPerBet}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">ROI</div>
+                        <div className={`text-xl font-bold ${monteCarloResults.simulation.roi > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {monteCarloResults.simulation.roi}%
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Max Profit</div>
+                        <div className="text-xl font-bold text-green-400">${monteCarloResults.simulation.maxProfit}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Max Loss</div>
+                        <div className="text-xl font-bold text-red-400">${monteCarloResults.simulation.maxLoss}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Risk Metrics */}
+                  <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--accent)]/20">
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">📉 Risk & Variance Metrics</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Standard Deviation</div>
+                        <div className="text-xl font-bold text-[var(--text-primary)]">${monteCarloResults.simulation.standardDeviation}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">95% Confidence Interval</div>
+                        <div className="text-xl font-bold text-[var(--text-primary)]">±${monteCarloResults.simulation.confidence95Interval}</div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="text-sm text-[var(--text-secondary)]">Kelly Criterion Optimal Stake</div>
+                        <div className="text-2xl font-bold text-[var(--accent)]">${monteCarloResults.simulation.kellyOptimalStake}</div>
+                        {monteCarloResults.simulation.kellyOptimalStake > 0 ? (
+                          <div className="text-xs text-green-400 mt-1">✅ Positive edge detected - Kelly suggests this stake for optimal growth</div>
+                        ) : (
+                          <div className="text-xs text-red-400 mt-1">⚠️ No positive edge detected - avoid betting</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Leg Breakdown */}
+                  {monteCarloResults.legBreakdown && (
+                    <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-[var(--accent)]/20">
+                      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">📈 Individual Leg Hit Rates</h3>
+                      <div className="space-y-2">
+                        {monteCarloResults.simulation.legSuccessRates?.map((rate: number, idx: number) => (
+                          <div key={idx} className="flex items-center gap-3">
+                            <div className="text-sm text-[var(--text-secondary)] w-16">Leg {idx + 1}:</div>
+                            <div className="flex-1 bg-[var(--bg-secondary)] rounded-full h-6 overflow-hidden">
+                              <div
+                                className="bg-gradient-to-r from-[var(--accent)] to-purple-500 h-full flex items-center justify-center text-xs font-bold text-white"
+                                style={{ width: `${rate}%` }}
+                              >
+                                {rate}%
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Warnings */}
+                  {monteCarloResults.simulation.correlationWarning && (
+                    <div className="bg-red-500/10 border-2 border-red-500 p-4 rounded-lg">
+                      <div className="text-red-400 font-bold">⚠️ WARNING: Correlated bets detected</div>
+                      <div className="text-sm text-red-300 mt-1">Same-game bets reduce actual win probability</div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* DAYTONA Results */
+                <>
+                  {/* Basic Info */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-[var(--bg-primary)] p-4 rounded-lg border border-purple-500/20">
+                      <div className="text-xs text-[var(--text-secondary)] mb-1">Simulations</div>
+                      <div className="text-2xl font-bold text-purple-400">{monteCarloResults.simulation.simulations?.toLocaleString()}</div>
+                    </div>
+                    <div className="bg-[var(--bg-primary)] p-4 rounded-lg border border-purple-500/20">
+                      <div className="text-xs text-[var(--text-secondary)] mb-1">Win Rate</div>
+                      <div className="text-2xl font-bold text-green-400">{monteCarloResults.simulation.win_rate}%</div>
+                    </div>
+                    <div className="bg-[var(--bg-primary)] p-4 rounded-lg border border-purple-500/20">
+                      <div className="text-xs text-[var(--text-secondary)] mb-1">ROI</div>
+                      <div className={`text-2xl font-bold ${monteCarloResults.simulation.roi > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {monteCarloResults.simulation.roi}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Advanced Metrics */}
+                  <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 p-6 rounded-lg border border-purple-500/30">
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">🎓 INSTITUTIONAL-GRADE METRICS</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Value at Risk (95%)</div>
+                        <div className="text-xl font-bold text-red-400">${monteCarloResults.simulation.advanced_metrics?.value_at_risk_95}</div>
+                        <div className="text-xs text-[var(--text-secondary)] mt-1">Worst case in 95% of scenarios</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Sharpe Ratio</div>
+                        <div className="text-xl font-bold text-[var(--accent)]">{monteCarloResults.simulation.advanced_metrics?.sharpe_ratio}</div>
+                        <div className="text-xs text-[var(--text-secondary)] mt-1">Risk-adjusted return (higher = better)</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Max Drawdown</div>
+                        <div className="text-xl font-bold text-orange-400">${monteCarloResults.simulation.advanced_metrics?.max_drawdown}</div>
+                        <div className="text-xs text-[var(--text-secondary)] mt-1">Largest consecutive loss</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Kelly Optimal</div>
+                        <div className="text-xl font-bold text-green-400">${monteCarloResults.simulation.advanced_metrics?.kelly_optimal_stake}</div>
+                        <div className="text-xs text-[var(--text-secondary)] mt-1">Mathematically optimal bet size</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Avg Win Streak</div>
+                        <div className="text-xl font-bold text-blue-400">{monteCarloResults.simulation.advanced_metrics?.avg_win_streak}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-[var(--text-secondary)]">Max Win Streak</div>
+                        <div className="text-xl font-bold text-green-400">{monteCarloResults.simulation.advanced_metrics?.max_win_streak}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Percentiles */}
+                  {monteCarloResults.simulation.advanced_metrics?.percentiles && (
+                    <div className="bg-[var(--bg-primary)] p-6 rounded-lg border border-purple-500/20">
+                      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">📈 Outcome Distribution</h3>
+                      <div className="space-y-3">
+                        {Object.entries(monteCarloResults.simulation.advanced_metrics.percentiles).map(([key, value]) => (
+                          <div key={key} className="flex justify-between items-center">
+                            <div className="text-sm text-[var(--text-secondary)]">{key} Percentile:</div>
+                            <div className={`text-lg font-bold ${(value as number) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              ${value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Footer */}
+              <div className="bg-[var(--accent)]/10 p-4 rounded-lg border border-[var(--accent)]/30 text-center">
+                <div className="text-sm text-[var(--text-secondary)]">
+                  ✅ This analysis took {monteCarloResults.duration}s of REAL computation
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
