@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { auth, db } from '@/lib/firebase';
@@ -1438,7 +1438,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                           <div key={key} className="flex justify-between items-center">
                             <div className="text-sm text-[var(--text-secondary)]">{key} Percentile:</div>
                             <div className={`text-lg font-bold ${(value as number) > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              ${value}
+                              ${String(value)}
                             </div>
                           </div>
                         ))}
