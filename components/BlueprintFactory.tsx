@@ -183,7 +183,7 @@ export default function BlueprintFactory() {
       // Store game stats for display
       setGameStats({ upcoming: upcomingGames.length, live: liveGames.length });
       
-      console.log(`ðŸŽ¯ Strategy generation: ${upcomingGames.length} upcoming games, ${liveGames.length} live games`);
+      console.log(`[Strategy] generation: ${upcomingGames.length} upcoming games, ${liveGames.length} live games`);
       
       // Prioritize upcoming games for betting strategies
       const gamesForBetting = upcomingGames.length > 0 ? upcomingGames : allOdds;
@@ -235,10 +235,10 @@ Focus: ${strategy.focus}
 Bankroll: $${bankroll}
 Risk Level: ${riskLevel}
 Stake: $${calculatedStake.toFixed(2)} (${(strategy.risk * riskMultiplier * 100).toFixed(1)}% of bankroll)
-${excludedTeams.length > 0 ? `\nâ›” EXCLUDED TEAMS (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
-${upcomingGames.length > 0 && liveGames.length > 0 ? `\nðŸ“Š GAME STATUS: ${upcomingGames.length} upcoming games (PRIORITIZE), ${liveGames.length} live games (AVOID)\n` : ''}
+${excludedTeams.length > 0 ? `\n[EXCLUDED TEAMS] (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
+${upcomingGames.length > 0 && liveGames.length > 0 ? `\n[GAME STATUS] ${upcomingGames.length} upcoming games (PRIORITIZE), ${liveGames.length} live games (AVOID)\n` : ''}
 
-â° FOCUS ON GAMES WITHIN 72 HOURS - most accurate odds!
+[FOCUS] FOCUS ON GAMES WITHIN 72 HOURS - most accurate odds!
 
 Available games and ALL markets (including player props for top games):
 ${JSON.stringify(gamesForBetting, null, 2)}
@@ -453,7 +453,7 @@ Return ONLY valid JSON:
         if (!isDuplicate) {
           uniqueBlueprints.push(bp);
         } else {
-          console.log(`âš ï¸ Skipped duplicate: ${bp.strategy}`);
+          console.log(`[SKIP] Skipped duplicate: ${bp.strategy}`);
         }
       }
       
@@ -506,7 +506,7 @@ Return ONLY valid JSON:
       });
       
       setSavedBlueprints([...savedBlueprints, blueprint.id]);
-      alert(`âœ… ${blueprint.strategy} saved to dashboard!`);
+      alert(`[SAVED] ${blueprint.strategy} saved to dashboard!`);
     } catch (error) {
       console.error('Save error:', error);
       alert('Failed to save blueprint. Please check your connection and try again.');
