@@ -1,35 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as admin from 'firebase-admin';
+import { createCheckoutSession } from '@/lib/stripe';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
-    const { priceId } = await req.json();
+    const { tier, token } = await req.json();
 
-    // In production, use Stripe SDK
-    // For now, return a placeholder
-    const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-
-    if (!stripeSecretKey) {
+    if (!tier || !['pro', 'vip'].includes(tier)) {
       return NextResponse.json(
-        { error: 'Stripe not configured. Contact support.' },
-        { status: 500 }
+        { error: 'Invalid tier' },
+        { status: 400 }
       );
     }
 
-    // TODO: Implement Stripe Checkout Session
-    // const stripe = new Stripe(stripeSecretKey);
-    // const session = await stripe.checkout.sessions.create({
-    //   mode: 'subscription',
-    //   line_items: [{ price: priceId, quantity: 1 }],
-    //   success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?success=true`,
-    //   cancel_url: `${process.env.NEXT_PUBLIC_URL}/pricing?canceled=true`,
-    // });
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify Firebase token
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(token);
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    const userId = decodedToken.uid;
+    const userEmail = decodedToken.email || '';
+
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: 'Email required' },
+        { status: 400 }
+      );
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const successUrl = `${appUrl}/dashboard?subscription=success`;
+    const cancelUrl = `${appUrl}/pricing?subscription=canceled`;
+
+    const session = await createCheckoutSession(
+      userId,
+      userEmail,
+      tier as 'pro' | 'vip',
+      successUrl,
+      cancelUrl
+    );
 
     return NextResponse.json({
-      url: '/dashboard?message=Stripe integration coming soon!',
-      message: 'Stripe checkout will be available soon. Your subscription features are unlocked for testing.'
+      url: session.url
     });
   } catch (error) {
     console.error('Checkout error:', error);

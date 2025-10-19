@@ -22,7 +22,7 @@ export default function DisclaimerBanner() {
 
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-b from-neutral-900 to-black border border-neutral-700 max-w-2xl w-full rounded shadow-2xl overflow-hidden">
+      <div className="bg-neutral-900 border border-neutral-700 max-w-2xl w-full rounded shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="bg-neutral-800 border-b border-neutral-700 p-6">
           <h2 className="text-lg font-semibold text-white">Terms of Service & Disclaimer</h2>

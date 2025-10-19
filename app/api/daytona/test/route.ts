@@ -23,17 +23,29 @@ export async function POST(req: NextRequest) {
     }
 
     // Initialize Daytona SDK
-    const daytona = new Daytona({
-      apiKey: daytonaKey
-    });
-
-    console.log('✓ Daytona SDK initialized');
+    console.log('Initializing Daytona SDK...');
+    let daytona;
+    let sandbox;
+    
+    try {
+      daytona = new Daytona({
+        apiKey: daytonaKey
+      });
+      console.log('✓ Daytona SDK initialized');
+    } catch (initError: any) {
+      console.error('Failed to initialize Daytona SDK:', initError);
+      throw new Error(`Daytona SDK initialization failed: ${initError.message}`);
+    }
 
     // Create sandbox
-    console.log('Creating sandbox...');
-    const sandbox = await daytona.create();
-
-    console.log('✓ Sandbox created:', sandbox.id);
+    try {
+      console.log('Creating sandbox...');
+      sandbox = await daytona.create();
+      console.log('✓ Sandbox created:', sandbox.id);
+    } catch (createError: any) {
+      console.error('Failed to create sandbox:', createError);
+      throw new Error(`Sandbox creation failed: ${createError.message}`);
+    }
 
     try {
       // Prepare bets data with actual odds
@@ -271,10 +283,12 @@ print(json.dumps(results))
 
     } catch (execError) {
       // Clean up sandbox on error
-      try {
-        await daytona.delete(sandbox);
-      } catch (e) {
-        console.error('Failed to clean up sandbox:', e);
+      if (daytona && sandbox) {
+        try {
+          await daytona.delete(sandbox);
+        } catch (e) {
+          console.error('Failed to clean up sandbox:', e);
+        }
       }
       throw execError;
     }

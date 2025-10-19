@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { auth, db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
+import { placeParlayBet } from '@/lib/bet-tracking';
 
 type BetLeg = {
   type: 'game' | 'player_prop';
@@ -208,6 +209,15 @@ ANALYSIS REQUIREMENTS - DO DEEP RESEARCH:
 7. Correlation: Avoid correlated bets (same game QB passing TDs + team total Over)
 8. Value Hunting: Find mispriced lines where your edge > market's implied probability
 
+CRITICAL LINE VALUE RULES:
+- NFL game totals typically range 40-55 points (average is 44-46)
+- Elite QBs average 250-300 passing yards per game
+- Top RBs average 80-120 rushing yards
+- WR1s average 70-90 receiving yards, 5-7 receptions
+- Use REALISTIC lines from the market data provided
+- Do NOT pick artificially low totals that rarely hit
+- Higher totals = higher scores needed to win (be realistic about offensive output)
+
 CRITICAL: You MUST respond with ONLY valid JSON in this exact format:
 {
   "bets": [
@@ -261,21 +271,24 @@ ${strategy.focus === 'qb_props' ? `
 - ONLY quarterback props: passing yards, passing TDs, completions, interceptions
 - Include 4-5 QB prop bets
 - Consider weather, matchups, pace of play
-- Examples: "Mahomes Over 275.5 Pass Yds", "Allen 2+ Pass TDs"
+- Use REALISTIC lines: Elite QBs 260-290 yards, Good QBs 230-260 yards
+- Examples: "Mahomes Over 265.5 Pass Yds", "Allen Over 1.5 Pass TDs", "Burrow Over 32.5 Completions"
 ` : ''}
 
 ${strategy.focus === 'rb_props' ? `
 - ONLY running back props: rushing yards, rushing TDs, attempts
 - Include 4-5 RB prop bets
 - Consider defensive rankings, game script
-- Examples: "Henry Over 85.5 Rush Yds", "CMC Anytime TD"
+- Use REALISTIC lines: Elite RBs 90-110 yards, Good RBs 65-85 yards
+- Examples: "Henry Over 95.5 Rush Yds", "CMC Over 75.5 Rush Yds", "Barkley Anytime TD"
 ` : ''}
 
 ${strategy.focus === 'wr_props' ? `
 - ONLY wide receiver props: receptions, receiving yards, receiving TDs
 - Include 4-5 WR prop bets
 - Consider target share, cornerback matchups
-- Examples: "Jefferson Over 6.5 Receptions", "Hill 80+ Rec Yds"
+- Use REALISTIC lines: WR1s 70-85 yards, 5.5-7.5 receptions
+- Examples: "Jefferson Over 6.5 Receptions", "Hill Over 75.5 Rec Yds", "Chase Over 65.5 Rec Yds"
 ` : ''}
 
 ${strategy.focus === 'alternates' ? `
@@ -300,7 +313,9 @@ ${strategy.focus === 'totals' ? `
 - ONLY over/under bets
 - Consider weather (wind, rain, cold = under, dome = over)
 - Pace of play, offensive/defensive rankings
-- Examples: "Bills vs Dolphins Over 48.5", "Patriots vs Jets Under 37.5"
+- REALISTIC NFL totals: High-scoring games 48-52, Average games 43-47, Low-scoring 38-42
+- DO NOT pick totals under 36 unless extreme weather/defensive matchup
+- Examples: "Bills vs Dolphins Over 47.5", "Ravens vs Steelers Under 41.5", "Chiefs vs Bengals Over 49.5"
 ` : ''}
 
 GENERAL REQUIREMENTS:
@@ -510,6 +525,44 @@ Return ONLY valid JSON:
     } catch (error) {
       console.error('Save error:', error);
       alert('Failed to save blueprint. Please check your connection and try again.');
+    }
+  };
+
+  const placeBet = async (blueprint: Blueprint) => {
+    if (!user) {
+      alert('Please sign in to place bets');
+      return;
+    }
+    
+    const confirmed = confirm(
+      `Place this bet?\n\n` +
+      `Strategy: ${blueprint.strategy}\n` +
+      `Legs: ${blueprint.bets.length}\n` +
+      `Stake: $${blueprint.stake.toFixed(2)}\n` +
+      `Potential Win: $${blueprint.potentialWin.toFixed(2)}\n` +
+      `Odds: ${blueprint.totalOdds.toFixed(2)}x\n\n` +
+      `This will be tracked in your bet history.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      const betId = await placeParlayBet({
+        userId: user.uid,
+        userName: user.displayName || undefined,
+        userEmail: user.email || undefined,
+        strategy: blueprint.strategy,
+        legs: blueprint.bets,
+        stake: blueprint.stake,
+        potentialPayout: blueprint.potentialWin,
+        totalOdds: blueprint.totalOdds,
+        blueprintId: blueprint.id
+      });
+      
+      alert(`✅ Bet Placed!\n\nBet ID: ${betId}\nYou can track this in your dashboard.\n\nRemember to update the result when games finish!`);
+    } catch (error) {
+      console.error('Place bet error:', error);
+      alert('Failed to place bet. Please check Firestore setup and try again.');
     }
   };
 
@@ -911,10 +964,9 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
             <button
               onClick={generateAllBlueprints}
               disabled={generating || !user}
-              className="bg-gradient-to-r from-[var(--accent)] to-purple-500 text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-[var(--accent)]/40 transition-all relative overflow-hidden group"
+              className="bg-[var(--accent)] text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-[var(--accent)]/40 transition-all"
             >
-              <span className="relative z-10">{generating ? `Generating ${strategies.filter(s => bankroll >= s.minBankroll).length} Strategies...` : !user ? 'Sign In Required' : `Generate All Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}</span>
-              {!generating && <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"></div>}
+              <span>{generating ? `Generating ${strategies.filter(s => bankroll >= s.minBankroll).length} Strategies...` : !user ? 'Sign In Required' : `Generate All Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}</span>
             </button>
             
             <button
@@ -973,12 +1025,11 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                 setGenerating(false);
               }}
               disabled={generating || !user}
-              className="bg-gradient-to-r from-yellow-600 to-orange-600 text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-yellow-600/40 transition-all relative overflow-hidden group"
+              className="bg-yellow-600 text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-yellow-600/40 transition-all"
             >
-              <span className="relative z-10">
+              <span>
                  Generate Mega Parlay ($60  $6k+)
               </span>
-              {!generating && <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-yellow-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>}
             </button>
           </div>
 
@@ -995,7 +1046,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card p-5 bg-gradient-to-r from-blue-500/20 via-purple-500/10 to-blue-500/20 border-2 border-blue-500/50 shadow-lg shadow-blue-500/20"
+          className="card p-5 bg-[var(--card)] border-2 border-[var(--accent)]/50"
         >
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
@@ -1055,7 +1106,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="px-2 py-1 bg-gradient-to-br from-[var(--accent)]/20 to-purple-500/20 border border-[var(--accent)]/50 text-[var(--accent)] text-xs font-mono font-bold shadow-inner">
+                    <div className="px-2 py-1 bg-[var(--accent)]/20 border border-[var(--accent)]/50 text-[var(--accent)] text-xs font-mono font-bold">
                       {bp.icon}
                     </div>
                     <h4 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-glow)] transition-colors">
@@ -1075,19 +1126,19 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                 <>
                   {/* Stats */}
                   <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-                    <div className="bg-gradient-to-br from-[var(--accent)]/5 to-transparent p-2 border border-[var(--border)]">
+                    <div className="bg-[var(--accent)]/5 p-2 border border-[var(--border)]">
                       <div className="text-xs text-[var(--text-secondary)]">Payout</div>
                       <div className="font-bold text-[var(--accent)]">{bp.totalOdds.toFixed(2)}x</div>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-500/5 to-transparent p-2 border border-[var(--border)]">
+                    <div className="bg-[var(--card)] p-2 border border-[var(--border)]">
                       <div className="text-xs text-[var(--text-secondary)]">Win %</div>
                       <div className="font-bold text-[var(--text-primary)]">{(bp.winProb * 100).toFixed(0)}%</div>
                     </div>
-                    <div className="bg-gradient-to-br from-[var(--warning)]/5 to-transparent p-2 border border-[var(--border)]">
+                    <div className="bg-[var(--warning)]/5 p-2 border border-[var(--border)]">
                       <div className="text-xs text-[var(--text-secondary)]">Stake</div>
                       <div className="font-bold text-[var(--warning)]">${bp.stake.toFixed(0)}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-[var(--success)]/5 to-transparent p-2 border border-[var(--border)]">
+                    <div className="bg-[var(--success)]/5 p-2 border border-[var(--border)]">
                       <div className="text-xs text-[var(--text-secondary)]">To Win</div>
                       <div className="font-bold text-[var(--success)]">${bp.potentialWin.toFixed(0)}</div>
                     </div>
@@ -1120,7 +1171,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                   </div>
 
                   {/* Actions */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => setSelectedStrategy(bp.id)}
                       className="text-xs bg-[var(--card)] border border-[var(--border)] py-2 hover:border-[var(--accent)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -1132,7 +1183,13 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                       onClick={() => saveBlueprint(bp)}
                       className="text-xs bg-[var(--success)]/10 border border-[var(--success)] py-2 hover:bg-[var(--success)]/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[var(--success)]"
                     >
-                      {savedBlueprints.includes(bp.id) ? 'Saved' : 'Save'}
+                      {savedBlueprints.includes(bp.id) ? '✓ Saved' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => placeBet(bp)}
+                      className="text-xs bg-[var(--accent)]/10 border border-[var(--accent)] py-2 hover:bg-[var(--accent)]/20 transition-colors text-[var(--accent)] font-semibold"
+                    >
+                      💰 Place Bet
                     </button>
                     <button
                       onClick={() => regenerateBlueprint(bp.id)}
@@ -1145,7 +1202,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                       className="text-xs bg-[var(--accent)]/10 border border-[var(--accent)] py-2 hover:bg-[var(--accent)]/20 transition-colors text-[var(--accent)]"
                       title="AI-Adjusted Monte Carlo with Variance (5,000 simulations)"
                     >
-                       Test (5k MC)
+                      Test (5k MC)
                     </button>
                     <button
                       onClick={async () => {
@@ -1231,7 +1288,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                 onClick={() => setShowMonteCarloModal(false)}
                 className="text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
-                
+                ✕
               </button>
             </div>
 

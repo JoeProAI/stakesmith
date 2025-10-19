@@ -200,8 +200,8 @@ Return ONLY valid JSON in this format:
           className="space-y-4"
         >
           {/* AI Overall Analysis */}
-          <div className="card p-6 bg-gradient-to-br from-[var(--card)] to-[#1a1a2e]">
-            <h3 className="text-lg font-semibold mb-2">🤖 AI Analysis</h3>
+          <div className="card p-6 bg-[var(--card)]">
+            <h3 className="text-lg font-semibold mb-2"> AI Analysis</h3>
             <p className="text-neutral-300 leading-relaxed">{blueprint.aiAnalysis}</p>
           </div>
 

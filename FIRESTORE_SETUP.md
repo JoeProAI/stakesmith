@@ -6,6 +6,8 @@ Firestore is required for:
 - 💾 Saving betting strategies
 - 📊 Transaction history
 - 👤 User profiles
+- 🎯 **Bet tracking (place bets, track wins/losses)**
+- 📈 **Win rate & performance analytics**
 
 ---
 
@@ -58,6 +60,14 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Users can create and manage their own bets
+    match /bets/{betId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
