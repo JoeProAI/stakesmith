@@ -82,7 +82,8 @@ export async function getUserTier(userId: string): Promise<SubscriptionTier> {
 export async function hasFeatureAccess(userId: string, feature: 'advanced_simulations' | 'unlimited_strategies' | 'discord_access'): Promise<boolean> {
   const tier = await getUserTier(userId);
 
-  const featureAccess = {
+  type Feature = 'advanced_simulations' | 'unlimited_strategies' | 'discord_access';
+  const featureAccess: Record<'free' | 'pro' | 'vip', Feature[]> = {
     free: [],
     pro: ['advanced_simulations'],
     vip: ['advanced_simulations', 'unlimited_strategies', 'discord_access']
