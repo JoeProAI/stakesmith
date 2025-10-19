@@ -37,14 +37,22 @@ export async function POST(req: NextRequest) {
       throw new Error(`Daytona SDK initialization failed: ${initError.message}`);
     }
 
-    // Create sandbox
+    // Create sandbox with Python image
     try {
-      console.log('Creating sandbox...');
-      sandbox = await daytona.create();
+      console.log('Creating Python sandbox (this may take 30-60s on first run)...');
+      sandbox = await daytona.create(
+        {
+          image: 'python:3.11-slim'
+        },
+        {
+          timeout: 120 // 2 minute timeout for sandbox creation
+        }
+      );
       console.log('✓ Sandbox created:', sandbox.id);
     } catch (createError: any) {
       console.error('Failed to create sandbox:', createError);
-      throw new Error(`Sandbox creation failed: ${createError.message}`);
+      console.error('Error details:', JSON.stringify(createError, null, 2));
+      throw new Error(`Sandbox creation failed: ${createError.message || 'Unknown error'}`);
     }
 
     try {
