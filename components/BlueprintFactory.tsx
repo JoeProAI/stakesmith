@@ -248,7 +248,7 @@ Stake: $${calculatedStake.toFixed(2)} (${(strategy.risk * riskMultiplier * 100).
 ${excludedTeams.length > 0 ? `\n[EXCLUDED TEAMS] (DO NOT include any bets involving these teams):\n${excludedTeams.join(', ')}\n` : ''}
 ${upcomingGames.length > 0 && liveGames.length > 0 ? `\n[GAME STATUS] ${upcomingGames.length} upcoming games (PRIORITIZE), ${liveGames.length} live games (AVOID)\n` : ''}
 
-[FOCUS] FOCUS ON GAMES WITHIN 72 HOURS - most accurate odds!
+[FOCUS] Prioritize games starting soonest (within 3 days) - most accurate odds!
 
 Available games and ALL markets (including player props for top games):
 ${JSON.stringify(gamesForBetting, null, 2)}
