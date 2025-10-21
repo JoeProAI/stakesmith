@@ -635,6 +635,10 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         })
       });
 
+      if (!aiRes.ok) {
+        throw new Error(`API request failed: ${aiRes.status} ${aiRes.statusText}`);
+      }
+
       const aiData = await aiRes.json();
       console.log('AI response received for', strategy.name);
       
@@ -711,6 +715,14 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         return acc * decimal;
       }, 1);
 
+      // Validate all required fields
+      if (!parsed.bets || parsed.bets.length === 0) {
+        throw new Error('No bets generated - AI returned empty bet array');
+      }
+      if (!parsed.overallStrategy) {
+        throw new Error('No strategy explanation provided');
+      }
+
       const existing = (prev => prev)([] as any); // no-op placeholder to keep context unique
       const newBlueprint = {
         id: blueprintId,
@@ -719,15 +731,15 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         icon: strategy.icon,
         bets: parsed.bets,
         totalOdds,
-        ev: parsed.expectedValue,
-        winProb: parsed.winProbability,
+        ev: parsed.expectedValue || 0,
+        winProb: parsed.winProbability || 0,
         stake: calculatedStake,
         potentialWin: calculatedStake * totalOdds,
         aiReasoning: parsed.overallStrategy,
         status: 'ready' as const
       };
 
-      console.log('Successfully regenerated', strategy.name);
+      console.log('Successfully regenerated', strategy.name, '- Bets:', newBlueprint.bets.length);
       setBlueprints(prev => prev.map(bp => bp.id === blueprintId ? newBlueprint : bp));
     } catch (error) {
       console.error('Regenerate error:', error);
@@ -1217,10 +1229,17 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                             body: JSON.stringify({ blueprint: bp })
                           });
                           
+                          if (!res.ok) {
+                            const errorText = await res.text();
+                            console.error(' DAYTONA HTTP error:', res.status, errorText);
+                            throw new Error(`Server error (${res.status}): ${errorText.substring(0, 200)}`);
+                          }
+                          
                           const data = await res.json();
                           const duration = ((performance.now() - startTime) / 1000).toFixed(2);
                           
                           if (data.error) {
+                            console.error(' DAYTONA API error:', data);
                             alert(` DAYTONA ${data.message || data.error}\n\n${data.fallback || 'Use fast Test button instead'}`);
                             return;
                           }
@@ -1239,10 +1258,13 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                             });
                             setShowMonteCarloModal(true);
                             console.log(` DAYTONA completed in ${duration}s`);
+                          } else {
+                            console.error(' DAYTONA unexpected response:', data);
+                            alert(' DAYTONA returned unexpected response. Use fast Test button instead.');
                           }
                         } catch (error) {
                           console.error(' DAYTONA error:', error);
-                          alert(` DAYTONA Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}\n\nTry the fast Test button instead.`);
+                          alert(` DAYTONA Failed\n\n${error instanceof Error ? error.message : 'Unknown error'}\n\nTry the fast Test (5k MC) button instead.`);
                         }
                       }}
                       className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-2 hover:from-purple-700 hover:to-blue-700 transition-all font-bold shadow-lg"
