@@ -37,18 +37,29 @@ export async function POST(req: NextRequest) {
       throw new Error(`Daytona SDK initialization failed: ${initError.message}`);
     }
 
-    // Create sandbox with Python image
+    // Create sandbox from Daytona's pre-built snapshot (instant, no build time)
     try {
-      console.log('Creating Python sandbox (this may take 30-60s on first run)...');
+      console.log('Creating sandbox from Daytona snapshot...');
       sandbox = await daytona.create(
         {
-          image: 'python:3.11-slim'
+          snapshot: 'daytonaio/sandbox:0.4.3' // Use latest stable Daytona snapshot
         },
         {
-          timeout: 120 // 2 minute timeout for sandbox creation
+          timeout: 60 // 1 minute timeout (snapshots are fast)
         }
       );
       console.log('✓ Sandbox created:', sandbox.id);
+      
+      // Check if Python is available, install if needed
+      console.log('Checking Python installation...');
+      try {
+        const pythonCheck = await sandbox.process.executeCommand('python3 --version');
+        console.log('✓ Python already installed:', pythonCheck.result.trim());
+      } catch {
+        console.log('Installing Python...');
+        await sandbox.process.executeCommand('apt-get update && apt-get install -y python3 python3-pip', undefined, undefined, 30);
+        console.log('✓ Python installed');
+      }
     } catch (createError: any) {
       console.error('Failed to create sandbox:', createError);
       console.error('Error details:', JSON.stringify(createError, null, 2));
@@ -252,12 +263,20 @@ results = {
 print(json.dumps(results))
 `;
 
-      // Upload the Python script to sandbox
-      console.log('Uploading Monte Carlo script...');
-      const scriptContent = Buffer.from(pythonScript, 'utf-8');
-      await sandbox.fs.uploadFile(scriptContent, 'monte_carlo.py');
+      // Write Python script using echo (workaround for serverless uploadFile issues)
+      console.log('Writing Monte Carlo script...');
       
-      console.log('✓ Script uploaded');
+      // Escape the script for safe shell execution
+      const scriptEscaped = pythonScript
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\$/g, '\\$')
+        .replace(/`/g, '\\`');
+      
+      // Write script in chunks to avoid command length limits
+      await sandbox.process.executeCommand(`cat > monte_carlo.py << 'EOFSCRIPT'\n${pythonScript}\nEOFSCRIPT`);
+      
+      console.log('✓ Script written');
 
       // Execute the ADVANCED Monte Carlo simulation
       console.log('🚀 Running DAYTONA Monte Carlo simulation (10,000 iterations)...');
