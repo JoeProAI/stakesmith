@@ -590,15 +590,32 @@ Return ONLY valid JSON:
     ));
 
     try {
+      console.log('⚡ Step 1: Fetching odds...');
       const oddsRes = await fetch('/api/odds');
-      const oddsData = await oddsRes.json();
       
+      if (!oddsRes.ok) {
+        console.error('❌ Odds API error:', oddsRes.status, oddsRes.statusText);
+        const errorText = await oddsRes.text();
+        console.error('Error details:', errorText.substring(0, 200));
+        throw new Error(`Failed to fetch odds: ${oddsRes.status}`);
+      }
+      
+      const oddsData = await oddsRes.json();
+      console.log('✓ Odds fetched:', oddsData.events?.length || 0, 'events');
+      
+      if (!oddsData.events || oddsData.events.length === 0) {
+        throw new Error('No games available. Check back during NFL season.');
+      }
+      
+      console.log('⚡ Step 2: Fetching detailed odds...');
       const detailedOddsPromises = oddsData.events.slice(0, 5).map((event: any) => 
         fetch(`/api/odds/${event.id}`)
           .then(res => res.ok ? res.json() : null)
-          .catch(err => null)
+          .catch(err => { console.log('Failed to fetch detailed odds for event:', event.id); return null; })
       );
       const detailedOdds = (await Promise.all(detailedOddsPromises)).filter(Boolean);
+      console.log('✓ Detailed odds:', detailedOdds.length, 'events');
+      
       const allOdds = detailedOdds.length > 0 
         ? [...detailedOdds, ...oddsData.events.slice(5, 15)]
         : oddsData.events;
@@ -607,7 +624,7 @@ Return ONLY valid JSON:
       const upcomingGames = allOdds.filter((game: any) => game.gameStatus === 'upcoming');
       const liveGames = allOdds.filter((game: any) => game.gameStatus === 'live');
       
-      console.log(` Regenerating ${strategy.name}: ${upcomingGames.length} upcoming, ${liveGames.length} live`);
+      console.log(`⚡ Step 3: Regenerating ${strategy.name}: ${upcomingGames.length} upcoming, ${liveGames.length} live`);
       
       // Prioritize upcoming games
       const gamesForBetting = upcomingGames.length > 0 ? upcomingGames : allOdds;
@@ -615,6 +632,7 @@ Return ONLY valid JSON:
       const riskMult = riskLevel === 'conservative' ? 0.5 : riskLevel === 'aggressive' ? 1.5 : 1;
       const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * riskMult * 100) / 100);
       
+      console.log(`⚡ Step 4: Calling AI (${idxFromId % 2 === 0 ? 'Grok' : 'GPT-4o'})...`);
       const aiRes = await fetch('/api/forge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -636,11 +654,15 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       });
 
       if (!aiRes.ok) {
-        throw new Error(`API request failed: ${aiRes.status} ${aiRes.statusText}`);
+        console.error('❌ AI API error:', aiRes.status, aiRes.statusText);
+        const errorText = await aiRes.text();
+        console.error('Error response:', errorText.substring(0, 300));
+        throw new Error(`AI API request failed: ${aiRes.status} ${aiRes.statusText}`);
       }
 
       const aiData = await aiRes.json();
-      console.log('AI response received for', strategy.name);
+      console.log('✓ AI response received for', strategy.name);
+      console.log('Response length:', aiData.text?.length || 0, 'characters');
       
       if (!aiData.text) {
         console.error(`${strategy.name}: No text in AI response:`, aiData);
@@ -739,19 +761,35 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         status: 'ready' as const
       };
 
-      console.log('Successfully regenerated', strategy.name, '- Bets:', newBlueprint.bets.length);
+      console.log('✅ Successfully regenerated', strategy.name, '- Bets:', newBlueprint.bets.length);
+      console.log('New blueprint:', {
+        strategy: newBlueprint.strategy,
+        legs: newBlueprint.bets.length,
+        odds: newBlueprint.totalOdds.toFixed(2),
+        stake: newBlueprint.stake,
+        potentialWin: newBlueprint.potentialWin.toFixed(2)
+      });
+      
       setBlueprints(prev => prev.map(bp => bp.id === blueprintId ? newBlueprint : bp));
+      
+      alert(`✅ ${strategy.name} Regenerated!\n\n${newBlueprint.bets.length} legs • ${newBlueprint.totalOdds.toFixed(2)}x odds\nStake: $${newBlueprint.stake} → Win: $${newBlueprint.potentialWin.toFixed(2)}`);
+      
     } catch (error) {
-      console.error('Regenerate error:', error);
+      console.error('❌ REGENERATE ERROR:', error);
+      console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      
       // On error, restore original blueprint's ready status but keep data
       setBlueprints(prev => prev.map(bp => 
         bp.id === blueprintId ? { 
           ...originalBlueprint, 
           status: 'ready' as const,
-          aiReasoning: `Regeneration failed: ${error instanceof Error ? error.message : 'Try again'}` 
+          aiReasoning: `❌ Regeneration failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
         } : bp
       ));
-      alert(`Failed to regenerate ${strategy.name}. ${error instanceof Error ? error.message : 'Please try again.'}`);
+      
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`❌ Failed to Regenerate ${strategy.name}\n\n${errorMsg}\n\nCheck the browser console (F12) for details.`);
     }
   };
 
