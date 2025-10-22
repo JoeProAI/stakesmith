@@ -607,14 +607,14 @@ Return ONLY valid JSON:
         throw new Error('No games available. Check back during NFL season.');
       }
       
-      console.log('⚡ Step 2: Fetching detailed odds...');
+      console.log('⚡ Step 2: Fetching detailed odds (alternate lines, props)...');
       const detailedOddsPromises = oddsData.events.slice(0, 5).map((event: any) => 
         fetch(`/api/odds/${event.id}`)
           .then(res => res.ok ? res.json() : null)
-          .catch(err => { console.log('Failed to fetch detailed odds for event:', event.id); return null; })
+          .catch(() => null) // Silently fail - detailed odds are optional
       );
       const detailedOdds = (await Promise.all(detailedOddsPromises)).filter(Boolean);
-      console.log('✓ Detailed odds:', detailedOdds.length, 'events');
+      console.log(`✓ Detailed odds: ${detailedOdds.length}/${oddsData.events.slice(0, 5).length} events (404s are normal - not all games have props)`);
       
       const allOdds = detailedOdds.length > 0 
         ? [...detailedOdds, ...oddsData.events.slice(5, 15)]
