@@ -632,8 +632,16 @@ Return ONLY valid JSON:
       const riskMult = riskLevel === 'conservative' ? 0.5 : riskLevel === 'aggressive' ? 1.5 : 1;
       const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * riskMult * 100) / 100);
       
+      // Retry logic for API timeouts
+      let aiRes;
+      let retryCount = 0;
+      const maxRetries = 2;
+      
       console.log(`⚡ Step 4: Calling AI (${idxFromId % 2 === 0 ? 'Grok' : 'GPT-4o'})...`);
-      const aiRes = await fetch('/api/forge', {
+      
+      while (retryCount <= maxRetries) {
+        try {
+          aiRes = await fetch('/api/forge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -651,13 +659,36 @@ Available games: ${JSON.stringify(gamesForBetting, null, 2)}
 Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedValue.`,
           model: idxFromId % 2 === 0 ? 'grok' : 'gpt4o'
         })
-      });
-
-      if (!aiRes.ok) {
-        console.error('❌ AI API error:', aiRes.status, aiRes.statusText);
-        const errorText = await aiRes.text();
-        console.error('Error response:', errorText.substring(0, 300));
-        throw new Error(`AI API request failed: ${aiRes.status} ${aiRes.statusText}`);
+          });
+          
+          if (!aiRes.ok) {
+            if (aiRes.status === 504 && retryCount < maxRetries) {
+              console.warn(`⚠️ API timeout (504), retrying... (attempt ${retryCount + 2}/${maxRetries + 1})`);
+              retryCount++;
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+              continue;
+            }
+            
+            console.error('❌ AI API error:', aiRes.status, aiRes.statusText);
+            const errorText = await aiRes.text();
+            console.error('Error response:', errorText.substring(0, 300));
+            throw new Error(`AI API request failed: ${aiRes.status} ${aiRes.statusText}`);
+          }
+          
+          // Success - break out of retry loop
+          break;
+          
+        } catch (fetchError: any) {
+          if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout')) {
+            if (retryCount < maxRetries) {
+              console.warn(`⚠️ Request timeout, retrying... (attempt ${retryCount + 2}/${maxRetries + 1})`);
+              retryCount++;
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              continue;
+            }
+          }
+          throw fetchError;
+        }
       }
 
       const aiData = await aiRes.json();
@@ -725,25 +756,77 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         }
       }
       
+      // ========== COMPREHENSIVE VALIDATION ==========
+      
+      // 1. Check bets array exists
       if (!parsed.bets || !Array.isArray(parsed.bets) || parsed.bets.length === 0) {
         console.error(`${strategy.name}: Invalid bets:`, parsed);
         throw new Error('No valid bets in response');
       }
       
-      console.log(` ${strategy.name} validated:`, parsed.bets.length, 'bets');
+      console.log(`⚡ Step 5: Validating ${parsed.bets.length} bets...`);
       
+      // 2. Validate each bet has required fields
+      for (let i = 0; i < parsed.bets.length; i++) {
+        const bet = parsed.bets[i];
+        
+        // Check description exists
+        if (!bet.description && !bet.pick) {
+          console.error(`Bet ${i + 1} missing description:`, bet);
+          throw new Error(`Bet ${i + 1} has no description or pick`);
+        }
+        
+        // Check odds is a valid number
+        if (typeof bet.odds !== 'number' || isNaN(bet.odds)) {
+          console.error(`Bet ${i + 1} has invalid odds:`, bet);
+          throw new Error(`Bet ${i + 1} has invalid odds: ${bet.odds}`);
+        }
+        
+        // Check confidence is valid (or set default)
+        if (typeof bet.confidence !== 'number' || isNaN(bet.confidence)) {
+          console.warn(`Bet ${i + 1} missing confidence, setting to 0.5`);
+          bet.confidence = 0.5;
+        }
+        
+        // Check EV is valid (or set default)
+        if (typeof bet.ev !== 'number' || isNaN(bet.ev)) {
+          console.warn(`Bet ${i + 1} missing EV, setting to 0`);
+          bet.ev = 0;
+        }
+      }
+      
+      // 3. Calculate total odds
       const totalOdds = parsed.bets.reduce((acc: number, bet: BetLeg) => {
         const decimal = bet.odds >= 100 ? 1 + bet.odds / 100 : 1 + 100 / Math.abs(bet.odds);
         return acc * decimal;
       }, 1);
-
-      // Validate all required fields
-      if (!parsed.bets || parsed.bets.length === 0) {
-        throw new Error('No bets generated - AI returned empty bet array');
+      
+      // Check for NaN in total odds
+      if (isNaN(totalOdds) || totalOdds <= 0) {
+        console.error('Invalid total odds calculated:', totalOdds);
+        throw new Error('Odds calculation failed - check bet odds values');
       }
+
+      // 4. Validate strategy and probabilities
       if (!parsed.overallStrategy) {
         throw new Error('No strategy explanation provided');
       }
+      
+      // 5. Validate win probability
+      const winProb = parsed.winProbability || 0;
+      if (isNaN(winProb) || winProb < 0 || winProb > 1) {
+        console.warn('Invalid win probability, using default 0.3');
+        parsed.winProbability = 0.3;
+      }
+      
+      // 6. Validate expected value
+      const ev = parsed.expectedValue || 0;
+      if (isNaN(ev)) {
+        console.warn('Invalid expected value, using default 0');
+        parsed.expectedValue = 0;
+      }
+      
+      console.log(`✓ All ${parsed.bets.length} bets validated successfully`);
 
       const existing = (prev => prev)([] as any); // no-op placeholder to keep context unique
       const newBlueprint = {
