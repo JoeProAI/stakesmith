@@ -423,15 +423,73 @@ Return ONLY valid JSON:
           
           console.log(`[${strategy.name}] Validating ${parsed.bets.length} bets...`);
           
-          // 2. Validate each bet has required fields
+          // 2. Transform and validate each bet
           for (let i = 0; i < parsed.bets.length; i++) {
             const bet = parsed.bets[i];
             
-            // Check description exists
+            // ========== TRANSFORM MALFORMED BETS ==========
+            // AI sometimes returns nested structures - try to fix them
+            
             if (!bet.description && !bet.pick) {
-              console.error(`[${strategy.name}] Bet ${i + 1} missing description:`, JSON.stringify(bet, null, 2));
-              console.error(`Available fields:`, Object.keys(bet));
-              throw new Error(`Bet ${i + 1} has no description or pick`);
+              console.warn(`[${strategy.name}] Bet ${i + 1} missing description, attempting to construct...`);
+              
+              // Check for nested prop structures (wr_props, rb_props, qb_props)
+              const propTypes = ['wr_props', 'rb_props', 'qb_props', 'player_prop'];
+              let transformed = false;
+              
+              for (const propType of propTypes) {
+                if (bet[propType] && typeof bet[propType] === 'object') {
+                  const props = bet[propType];
+                  
+                  // Extract player name
+                  const player = props.player || bet.player || 'Player';
+                  
+                  // Find the main prop line
+                  let propLine = '';
+                  let propValue = null;
+                  
+                  if (props.receptions !== undefined) {
+                    propLine = 'Receptions';
+                    propValue = props.receptions;
+                  } else if (props.yards !== undefined || props.receiving_yards !== undefined) {
+                    propLine = 'Receiving Yards';
+                    propValue = props.yards || props.receiving_yards;
+                  } else if (props.rushing_yards !== undefined) {
+                    propLine = 'Rushing Yards';
+                    propValue = props.rushing_yards;
+                  } else if (props.passing_yards !== undefined) {
+                    propLine = 'Passing Yards';
+                    propValue = props.passing_yards;
+                  } else if (props.pass_tds !== undefined || props.passing_tds !== undefined) {
+                    propLine = 'Passing TDs';
+                    propValue = props.pass_tds || props.passing_tds;
+                  }
+                  
+                  if (propLine && propValue !== null) {
+                    bet.description = `${player} Over ${propValue} ${propLine}`;
+                    bet.odds = bet.odds || -110; // Default odds
+                    console.log(`[${strategy.name}] ✓ Transformed bet ${i + 1}: ${bet.description}`);
+                    transformed = true;
+                    break;
+                  }
+                }
+              }
+              
+              // Try constructing from player + line + type fields
+              if (!transformed && bet.player && bet.line !== undefined) {
+                const type = bet.type || bet.stat_type || 'prop';
+                bet.description = `${bet.player} Over ${bet.line} ${type}`;
+                bet.odds = bet.odds || -110;
+                console.log(`[${strategy.name}] ✓ Constructed bet ${i + 1}: ${bet.description}`);
+                transformed = true;
+              }
+              
+              // Still no description? Reject it
+              if (!transformed) {
+                console.error(`[${strategy.name}] Bet ${i + 1} missing description:`, JSON.stringify(bet, null, 2));
+                console.error(`Available fields:`, Object.keys(bet));
+                throw new Error(`Bet ${i + 1} has no description or pick and cannot be auto-generated`);
+              }
             }
             
             // Check odds is a valid number
@@ -834,15 +892,73 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       
       console.log(`⚡ Step 5: Validating ${parsed.bets.length} bets...`);
       
-      // 2. Validate each bet has required fields
+      // 2. Transform and validate each bet
       for (let i = 0; i < parsed.bets.length; i++) {
         const bet = parsed.bets[i];
         
-        // Check description exists
+        // ========== TRANSFORM MALFORMED BETS ==========
+        // AI sometimes returns nested structures - try to fix them
+        
         if (!bet.description && !bet.pick) {
-          console.error(`Bet ${i + 1} missing description:`, JSON.stringify(bet, null, 2));
-          console.error(`Available fields:`, Object.keys(bet));
-          throw new Error(`Bet ${i + 1} has no description or pick`);
+          console.warn(`Bet ${i + 1} missing description, attempting to construct from available fields...`);
+          
+          // Check for nested prop structures (wr_props, rb_props, qb_props)
+          const propTypes = ['wr_props', 'rb_props', 'qb_props', 'player_prop'];
+          let transformed = false;
+          
+          for (const propType of propTypes) {
+            if (bet[propType] && typeof bet[propType] === 'object') {
+              const props = bet[propType];
+              
+              // Extract player name
+              const player = props.player || bet.player || 'Player';
+              
+              // Find the main prop line (receptions, yards, rushing_yards, passing_yards, etc.)
+              let propLine = '';
+              let propValue = null;
+              
+              if (props.receptions !== undefined) {
+                propLine = 'Receptions';
+                propValue = props.receptions;
+              } else if (props.yards !== undefined || props.receiving_yards !== undefined) {
+                propLine = 'Receiving Yards';
+                propValue = props.yards || props.receiving_yards;
+              } else if (props.rushing_yards !== undefined) {
+                propLine = 'Rushing Yards';
+                propValue = props.rushing_yards;
+              } else if (props.passing_yards !== undefined) {
+                propLine = 'Passing Yards';
+                propValue = props.passing_yards;
+              } else if (props.pass_tds !== undefined || props.passing_tds !== undefined) {
+                propLine = 'Passing TDs';
+                propValue = props.pass_tds || props.passing_tds;
+              }
+              
+              if (propLine && propValue !== null) {
+                bet.description = `${player} Over ${propValue} ${propLine}`;
+                bet.odds = bet.odds || -110; // Default odds
+                console.log(`✓ Transformed bet ${i + 1}: ${bet.description}`);
+                transformed = true;
+                break;
+              }
+            }
+          }
+          
+          // Try constructing from player + line + type fields
+          if (!transformed && bet.player && bet.line !== undefined) {
+            const type = bet.type || bet.stat_type || 'prop';
+            bet.description = `${bet.player} Over ${bet.line} ${type}`;
+            bet.odds = bet.odds || -110;
+            console.log(`✓ Constructed bet ${i + 1}: ${bet.description}`);
+            transformed = true;
+          }
+          
+          // Still no description? Reject it
+          if (!transformed) {
+            console.error(`Bet ${i + 1} missing description and cannot transform:`, JSON.stringify(bet, null, 2));
+            console.error(`Available fields:`, Object.keys(bet));
+            throw new Error(`Bet ${i + 1} has no description or pick and cannot be auto-generated`);
+          }
         }
         
         // Check odds is a valid number
