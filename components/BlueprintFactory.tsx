@@ -429,7 +429,8 @@ Return ONLY valid JSON:
             
             // Check description exists
             if (!bet.description && !bet.pick) {
-              console.error(`[${strategy.name}] Bet ${i + 1} missing description:`, bet);
+              console.error(`[${strategy.name}] Bet ${i + 1} missing description:`, JSON.stringify(bet, null, 2));
+              console.error(`Available fields:`, Object.keys(bet));
               throw new Error(`Bet ${i + 1} has no description or pick`);
             }
             
@@ -760,6 +761,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
       const aiData = await aiRes.json();
       console.log('✓ AI response received for', strategy.name);
       console.log('Response length:', aiData.text?.length || 0, 'characters');
+      console.log('Raw AI response (first 500 chars):', aiData.text?.substring(0, 500));
       
       if (!aiData.text) {
         console.error(`${strategy.name}: No text in AI response:`, aiData);
@@ -838,7 +840,8 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
         
         // Check description exists
         if (!bet.description && !bet.pick) {
-          console.error(`Bet ${i + 1} missing description:`, bet);
+          console.error(`Bet ${i + 1} missing description:`, JSON.stringify(bet, null, 2));
+          console.error(`Available fields:`, Object.keys(bet));
           throw new Error(`Bet ${i + 1} has no description or pick`);
         }
         
