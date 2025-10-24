@@ -413,17 +413,78 @@ Return ONLY valid JSON:
             }
           }
           
-          // Validate required fields
+          // ========== COMPREHENSIVE VALIDATION (same as regenerate) ==========
+          
+          // 1. Check bets array exists
           if (!parsed.bets || !Array.isArray(parsed.bets) || parsed.bets.length === 0) {
             console.error(`${strategy.name}: Invalid bets in response:`, parsed);
             throw new Error('No valid bets in response');
           }
           
-          // Calculate total odds
+          console.log(`[${strategy.name}] Validating ${parsed.bets.length} bets...`);
+          
+          // 2. Validate each bet has required fields
+          for (let i = 0; i < parsed.bets.length; i++) {
+            const bet = parsed.bets[i];
+            
+            // Check description exists
+            if (!bet.description && !bet.pick) {
+              console.error(`[${strategy.name}] Bet ${i + 1} missing description:`, bet);
+              throw new Error(`Bet ${i + 1} has no description or pick`);
+            }
+            
+            // Check odds is a valid number
+            if (typeof bet.odds !== 'number' || isNaN(bet.odds)) {
+              console.error(`[${strategy.name}] Bet ${i + 1} has invalid odds:`, bet);
+              throw new Error(`Bet ${i + 1} has invalid odds: ${bet.odds}`);
+            }
+            
+            // Check confidence is valid (or set default)
+            if (typeof bet.confidence !== 'number' || isNaN(bet.confidence)) {
+              console.warn(`[${strategy.name}] Bet ${i + 1} missing confidence, setting to 0.5`);
+              bet.confidence = 0.5;
+            }
+            
+            // Check EV is valid (or set default)
+            if (typeof bet.ev !== 'number' || isNaN(bet.ev)) {
+              console.warn(`[${strategy.name}] Bet ${i + 1} missing EV, setting to 0`);
+              bet.ev = 0;
+            }
+          }
+          
+          // 3. Calculate total odds
           const totalOdds = parsed.bets.reduce((acc: number, bet: BetLeg) => {
             const decimal = bet.odds >= 100 ? 1 + bet.odds / 100 : 1 + 100 / Math.abs(bet.odds);
             return acc * decimal;
           }, 1);
+          
+          // Check for NaN in total odds
+          if (isNaN(totalOdds) || totalOdds <= 0) {
+            console.error(`[${strategy.name}] Invalid total odds calculated:`, totalOdds);
+            throw new Error('Odds calculation failed - check bet odds values');
+          }
+
+          // 4. Validate probabilities
+          const winProb = parsed.winProbability || 0;
+          if (isNaN(winProb) || winProb < 0 || winProb > 1) {
+            console.warn(`[${strategy.name}] Invalid win probability, using default 0.3`);
+            parsed.winProbability = 0.3;
+          }
+          
+          // 5. Validate expected value
+          const ev = parsed.expectedValue || 0;
+          if (isNaN(ev)) {
+            console.warn(`[${strategy.name}] Invalid expected value, using default 0`);
+            parsed.expectedValue = 0;
+          }
+          
+          // 6. Validate strategy explanation
+          if (!parsed.overallStrategy) {
+            console.warn(`[${strategy.name}] Missing strategy explanation`);
+            parsed.overallStrategy = 'AI-generated parlay strategy';
+          }
+          
+          console.log(`[${strategy.name}] ✓ All ${parsed.bets.length} bets validated successfully`);
 
           const potentialWin = calculatedStake * totalOdds;
 
@@ -434,8 +495,8 @@ Return ONLY valid JSON:
             icon: strategy.icon,
             bets: parsed.bets,
             totalOdds,
-            ev: parsed.expectedValue,
-            winProb: parsed.winProbability,
+            ev: parsed.expectedValue || 0,
+            winProb: parsed.winProbability || 0,
             stake: calculatedStake,
             potentialWin,
             aiReasoning: parsed.overallStrategy,
@@ -633,7 +694,7 @@ Return ONLY valid JSON:
       const calculatedStake = Math.max(1, Math.floor(bankroll * strategy.risk * riskMult * 100) / 100);
       
       // Retry logic for API timeouts
-      let aiRes;
+      let aiRes: Response | undefined;
       let retryCount = 0;
       const maxRetries = 2;
       
@@ -689,6 +750,11 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
           }
           throw fetchError;
         }
+      }
+      
+      // Ensure we got a response
+      if (!aiRes) {
+        throw new Error('Failed to get AI response after retries');
       }
 
       const aiData = await aiRes.json();
