@@ -15,7 +15,7 @@ This document outlines all updates made to the StakeSmith application based on u
 ### Components Updated:
 - `components/Header.tsx` - Removed gradient from header background and subscribe button
 - `components/DashboardContent.tsx` - Removed gradients from stat cards
-- `components/BlueprintFactory.tsx` - Removed gradients from:
+- `components/BlueprintForge.tsx` - Removed gradients from:
   - Strategy generation buttons
   - Game status banner
   - Blueprint cards (icon badges, stat boxes)
@@ -32,7 +32,7 @@ This document outlines all updates made to the StakeSmith application based on u
 
 **Changes Made**:
 
-### Updated AI Prompt Guidelines (`components/BlueprintFactory.tsx`):
+### Updated AI Prompt Guidelines (`components/BlueprintForge.tsx`):
 
 Added **CRITICAL LINE VALUE RULES** to the AI strategy generation:
 ```
@@ -103,7 +103,7 @@ Full-featured bet history interface:
 
 ### Updated Components:
 
-**`components/BlueprintFactory.tsx`**:
+**`components/BlueprintForge.tsx`**:
 - Added `placeBet()` function
 - Added "💰 Place Bet" button to blueprint cards
 - Changed action grid from 2 columns to 3 columns
@@ -185,7 +185,7 @@ npm run deploy:vercel  # Deploy to production
 
 ### Placing a Bet
 
-1. Go to **Factory** page
+1. Go to **Forge** page
 2. Generate strategies (or use existing ones)
 3. Click **💰 Place Bet** on any blueprint
 4. Confirm the bet details
@@ -241,7 +241,7 @@ npm run deploy:vercel  # Deploy to production
 ### Modified Files:
 - `components/Header.tsx`
 - `components/DashboardContent.tsx`
-- `components/BlueprintFactory.tsx`
+- `components/BlueprintForge.tsx`
 - `components/ProductionForge.tsx`
 - `components/DisclaimerBanner.tsx`
 - `app/(app)/history/page.tsx`

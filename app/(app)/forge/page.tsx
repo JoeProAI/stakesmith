@@ -1,4 +1,4 @@
-import BlueprintFactory from '@/components/BlueprintFactory';
+import BlueprintForge from '@/components/BlueprintForge';
 import LegalFooter from '@/components/LegalFooter';
 
 export default function Forge() {
@@ -11,7 +11,7 @@ export default function Forge() {
             <span className="text-orange-400 font-semibold">Entertainment only:</span> AI strategies aren&apos;t guarantees. Bet at your own risk.
           </p>
         </div>
-        <BlueprintFactory />
+        <BlueprintForge />
       </main>
       <LegalFooter />
     </>

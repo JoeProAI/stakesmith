@@ -74,7 +74,7 @@ function areBlueprintsDuplicate(bp1: Blueprint, bp2: Blueprint): boolean {
   return getSig(bp1.bets) === getSig(bp2.bets);
 }
 
-export default function BlueprintFactory() {
+export default function BlueprintForge() {
   // State management
   const [bankroll, setBankroll] = useState(100);
   const [riskLevel, setRiskLevel] = useState<'conservative' | 'moderate' | 'aggressive'>('moderate');
@@ -607,7 +607,7 @@ Return ONLY valid JSON:
       }
 
     } catch (error) {
-      console.error('Factory error:', error);
+      console.error('Forge error:', error);
       alert(error instanceof Error ? error.message : 'Failed to generate blueprints');
     } finally {
       setGenerating(false);
@@ -1127,7 +1127,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
     <div className="space-y-6">
       {/* Control Panel */}
       <div className="card p-6">
-        <h3 className="text-2xl font-bold mb-4 text-[var(--text-primary)]">Strategy Factory</h3>
+        <h3 className="text-2xl font-bold mb-4 text-[var(--text-primary)]">Strategy Forge</h3>
         <p className="text-[var(--text-secondary)] mb-6 text-sm leading-relaxed">
           Generate 15 optimized betting strategies covering game lines, player props, alternate lines, same game parlays, and high-payout scenarios. Advanced analysis identifies the highest expected value opportunities from live market data.
         </p>
