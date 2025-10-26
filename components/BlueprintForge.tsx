@@ -484,11 +484,50 @@ Return ONLY valid JSON:
                 transformed = true;
               }
               
-              // Still no description? Reject it
+              // NUCLEAR FALLBACK: Try to construct SOMETHING from any available data
               if (!transformed) {
-                console.error(`[${strategy.name}] Bet ${i + 1} missing description:`, JSON.stringify(bet, null, 2));
+                console.warn(`[${strategy.name}] ⚠️ Using nuclear fallback for bet ${i + 1}...`);
+                
+                // Look for ANY game-related fields
+                const game = bet.game || bet.matchup || bet.teams || '';
+                const team = bet.team || bet.side || '';
+                const line = bet.line || bet.spread || bet.total || bet.value || '';
+                const betType = bet.type || bet.betType || bet.market || 'bet';
+                
+                // Construct best-effort description
+                if (game && line) {
+                  bet.description = `${game} - ${betType} ${line}`;
+                  transformed = true;
+                } else if (team && line) {
+                  bet.description = `${team} ${betType} ${line}`;
+                  transformed = true;
+                } else if (line) {
+                  bet.description = `${betType} ${line}`;
+                  transformed = true;
+                }
+                
+                if (transformed) {
+                  bet.odds = bet.odds || -110;
+                  console.log(`[${strategy.name}] ✓ Nuclear fallback created: ${bet.description}`);
+                }
+              }
+              
+              // Absolute last resort: Use raw JSON as description (better than failing)
+              if (!transformed) {
+                const fields = Object.keys(bet).filter(k => k !== 'odds' && k !== 'confidence' && k !== 'ev');
+                if (fields.length > 0) {
+                  bet.description = fields.map(k => `${k}: ${bet[k]}`).join(', ');
+                  bet.odds = bet.odds || -110;
+                  console.warn(`[${strategy.name}] ⚠️ Last resort description: ${bet.description}`);
+                  transformed = true;
+                }
+              }
+              
+              // If STILL nothing, then reject
+              if (!transformed) {
+                console.error(`[${strategy.name}] Bet ${i + 1} completely malformed:`, JSON.stringify(bet, null, 2));
                 console.error(`Available fields:`, Object.keys(bet));
-                throw new Error(`Bet ${i + 1} has no description or pick and cannot be auto-generated`);
+                throw new Error(`Bet ${i + 1} has no usable data - AI returned invalid format`);
               }
             }
             
@@ -953,11 +992,50 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
             transformed = true;
           }
           
-          // Still no description? Reject it
+          // NUCLEAR FALLBACK: Try to construct SOMETHING from any available data
           if (!transformed) {
-            console.error(`Bet ${i + 1} missing description and cannot transform:`, JSON.stringify(bet, null, 2));
+            console.warn(`⚠️ Using nuclear fallback for bet ${i + 1}...`);
+            
+            // Look for ANY game-related fields
+            const game = bet.game || bet.matchup || bet.teams || '';
+            const team = bet.team || bet.side || '';
+            const line = bet.line || bet.spread || bet.total || bet.value || '';
+            const betType = bet.type || bet.betType || bet.market || 'bet';
+            
+            // Construct best-effort description
+            if (game && line) {
+              bet.description = `${game} - ${betType} ${line}`;
+              transformed = true;
+            } else if (team && line) {
+              bet.description = `${team} ${betType} ${line}`;
+              transformed = true;
+            } else if (line) {
+              bet.description = `${betType} ${line}`;
+              transformed = true;
+            }
+            
+            if (transformed) {
+              bet.odds = bet.odds || -110;
+              console.log(`✓ Nuclear fallback created: ${bet.description}`);
+            }
+          }
+          
+          // Absolute last resort: Use raw JSON as description (better than failing)
+          if (!transformed) {
+            const fields = Object.keys(bet).filter(k => k !== 'odds' && k !== 'confidence' && k !== 'ev');
+            if (fields.length > 0) {
+              bet.description = fields.map(k => `${k}: ${bet[k]}`).join(', ');
+              bet.odds = bet.odds || -110;
+              console.warn(`⚠️ Last resort description: ${bet.description}`);
+              transformed = true;
+            }
+          }
+          
+          // If STILL nothing, then reject
+          if (!transformed) {
+            console.error(`Bet ${i + 1} completely malformed:`, JSON.stringify(bet, null, 2));
             console.error(`Available fields:`, Object.keys(bet));
-            throw new Error(`Bet ${i + 1} has no description or pick and cannot be auto-generated`);
+            throw new Error(`Bet ${i + 1} has no usable data - AI returned invalid format`);
           }
         }
         
