@@ -99,11 +99,7 @@ export default function BlueprintForge() {
   }, []);
 
   const generateAllBlueprints = async () => {
-    if (!user) {
-      alert('Please sign in to generate blueprints');
-      return;
-    }
-
+    // Allow anonymous generation - sign-in only required for saving
     setGenerating(true);
     setBlueprints([]);
 
@@ -655,7 +651,7 @@ Return ONLY valid JSON:
 
   const saveBlueprint = async (blueprint: Blueprint) => {
     if (!user) {
-      alert('Please sign in to save blueprints');
+      alert('Sign in with Google to save blueprints and track your bets!');
       return;
     }
     
@@ -689,7 +685,7 @@ Return ONLY valid JSON:
 
   const placeBet = async (blueprint: Blueprint) => {
     if (!user) {
-      alert('Please sign in to place bets');
+      alert('Sign in with Google to track your bets and see performance history!');
       return;
     }
     
@@ -1359,20 +1355,15 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
               onClick={generateAllBlueprints}
-              disabled={generating || !user}
+              disabled={generating}
               className="bg-[var(--accent)] text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-[var(--accent)]/40 transition-all"
             >
-              <span>{generating ? `Generating ${strategies.filter(s => bankroll >= s.minBankroll).length} Strategies...` : !user ? 'Sign In Required' : `Generate All Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}</span>
+              <span>{generating ? `Generating ${strategies.filter(s => bankroll >= s.minBankroll).length} Strategies...` : `Generate All Strategies (${strategies.filter(s => bankroll >= s.minBankroll).length})`}</span>
             </button>
             
             <button
               onClick={async () => {
-                if (!user) {
-                  alert('Please sign in to generate mega parlays');
-                  return;
-                }
-                
-                // Generate mega parlay
+                // Allow anonymous generation
                 setGenerating(true);
                 try {
                   const oddsRes = await fetch('/api/odds');
@@ -1420,7 +1411,7 @@ Return ONLY valid JSON with bets, overallStrategy, winProbability, and expectedV
                 }
                 setGenerating(false);
               }}
-              disabled={generating || !user}
+              disabled={generating}
               className="bg-yellow-600 text-white py-4 font-semibold text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:shadow-yellow-600/40 transition-all"
             >
               <span>
