@@ -4,20 +4,21 @@ import { motion } from 'framer-motion';
 
 const tiers = [
   {
-    name: 'Free Beta',
+    name: 'Free',
     price: '$0',
-    period: '/month',
-    description: 'Limited access during beta',
+    period: '/forever',
+    description: 'Full access - No credit card required',
     features: [
-      '3 blueprint generations per day',
-      'Basic strategies only',
-      'Community support',
-      'Access to dashboard',
-      'No credit card required'
+      'Unlimited strategy generations',
+      'All 15 strategies',
+      'Real-time NFL odds',
+      'Bet tracking',
+      'Performance analytics',
+      'Monte Carlo simulations'
     ],
-    cta: 'Get Beta Code',
-    highlight: false,
-    requiresCode: true
+    cta: 'Start Free',
+    highlight: true,
+    requiresCode: false
   },
   {
     name: 'Pro',
@@ -58,36 +59,22 @@ const tiers = [
 ];
 
 export default function SubscribePage() {
-  const [showBetaModal, setShowBetaModal] = useState(false);
-  const [betaCode, setBetaCode] = useState('');
-
-  const handleBetaCode = async () => {
-    // Validate beta code
-    const validCodes = [
-      'FORGE100',
-      'BLUEPRINT50',
-      'HAMMER25',
-      'IRONBET',
-      'SMITHVIP',
-      'BETASMITH',
-      'STAKE100',
-      'FACTORY1'
-    ];
-    
-    if (validCodes.includes(betaCode.toUpperCase())) {
-      alert('Beta code activated! You now have free access.');
-      setShowBetaModal(false);
+  const handleTierClick = (tierName: string) => {
+    if (tierName === 'Free') {
+      // Redirect to forge for free users
+      window.location.href = '/forge';
     } else {
-      alert('Invalid beta code. Please try again or contact support.');
+      // Pro/Elite coming soon
+      alert('Pro and Elite tiers coming soon! For now, enjoy unlimited free access.');
     }
   };
 
   return (
     <main className="mx-auto max-w-7xl p-6">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
+        <h1 className="text-4xl font-bold mb-4">Free NFL Betting Strategies</h1>
         <p className="text-neutral-400 text-lg">
-          Start with free beta access or unlock unlimited potential
+          Full access to all features - No credit card required
         </p>
       </div>
 
@@ -125,7 +112,7 @@ export default function SubscribePage() {
             </ul>
 
             <button
-              onClick={() => tier.requiresCode ? setShowBetaModal(true) : alert('Coming soon!')}
+              onClick={() => handleTierClick(tier.name)}
               className={`w-full py-3 rounded-lg font-semibold transition-colors ${
                 tier.highlight
                   ? 'bg-[var(--accent)] hover:opacity-90'
@@ -138,82 +125,32 @@ export default function SubscribePage() {
         ))}
       </div>
 
-      {/* Beta Code Modal */}
-      {showBetaModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur flex items-center justify-center z-50 p-4" onClick={() => setShowBetaModal(false)}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="card p-6 max-w-md w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Enter Beta Code</h3>
-              <button onClick={() => setShowBetaModal(false)} className="text-2xl hover:text-red-400">×</button>
-            </div>
-
-            <p className="text-neutral-400 text-sm mb-4">
-              Enter your beta access code to unlock free access during our beta period.
-            </p>
-
-            <input
-              type="text"
-              value={betaCode}
-              onChange={(e) => setBetaCode(e.target.value)}
-              placeholder="BETA2025"
-              className="w-full bg-black/40 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:border-[var(--accent)] focus:outline-none mb-4 uppercase"
-            />
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowBetaModal(false)}
-                className="flex-1 bg-neutral-700 py-3 rounded-lg hover:bg-neutral-600 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBetaCode}
-                className="flex-1 bg-[var(--accent)] py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
-              >
-                Activate
-              </button>
-            </div>
-
-            <div className="mt-4 p-3 bg-blue-600/20 border border-blue-600/50 rounded-lg">
-              <p className="text-xs text-blue-400">
-                <strong>Need a code?</strong> Contact us on Twitter @StakeSmith or email beta@stakesmith.ai
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
       {/* FAQ Section */}
       <div className="mt-16">
         <h2 className="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
         <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           <div className="card p-4">
-            <h4 className="font-semibold mb-2">How do I get a beta code?</h4>
+            <h4 className="font-semibold mb-2">Is it really free?</h4>
             <p className="text-sm text-neutral-400">
-              Beta codes are available to early supporters. Follow us on Twitter or join our Discord for codes.
+              Yes! Full access to all features with no credit card required. Pro tiers coming soon with additional features.
             </p>
           </div>
           <div className="card p-4">
-            <h4 className="font-semibold mb-2">Can I upgrade later?</h4>
+            <h4 className="font-semibold mb-2">Do I need to download anything?</h4>
             <p className="text-sm text-neutral-400">
-              Yes! Upgrade anytime to unlock unlimited generations and advanced features.
+              Nope! StakeSmith runs entirely in your browser. Just sign in with Google and start generating strategies.
             </p>
           </div>
           <div className="card p-4">
-            <h4 className="font-semibold mb-2">What payment methods do you accept?</h4>
+            <h4 className="font-semibold mb-2">How accurate are the predictions?</h4>
             <p className="text-sm text-neutral-400">
-              We accept all major credit cards, PayPal, and cryptocurrency through Stripe.
+              AI provides analysis based on odds and data, but nothing is guaranteed. Always bet responsibly.
             </p>
           </div>
           <div className="card p-4">
-            <h4 className="font-semibold mb-2">Is there a free trial?</h4>
+            <h4 className="font-semibold mb-2">Can I track my bets?</h4>
             <p className="text-sm text-neutral-400">
-              Pro tier includes a 7-day free trial. No credit card required for beta access.
+              Yes! Place bets directly in the app and track your performance over time with our analytics dashboard.
             </p>
           </div>
         </div>

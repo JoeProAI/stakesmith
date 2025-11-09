@@ -12,15 +12,15 @@ export default function Header() {
         </Link>
         <nav className="flex items-center gap-6">
           <Link href="/forge" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors relative group">
-            <span className="relative z-10">Factory</span>
+            <span className="relative z-10">Forge</span>
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[var(--accent)] transform scale-x-0 group-hover:scale-x-100 transition-transform"></div>
           </Link>
           <Link href="/dashboard" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors relative group">
             <span className="relative z-10">Dashboard</span>
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[var(--accent)] transform scale-x-0 group-hover:scale-x-100 transition-transform"></div>
           </Link>
-          <Link href="/subscribe" className="text-sm font-semibold bg-[var(--accent)] text-white px-5 py-2 hover:shadow-lg hover:shadow-[var(--accent)]/30 transition-all">
-            Subscribe
+          <Link href="/forge" className="text-sm font-semibold bg-[var(--accent)] text-white px-5 py-2 hover:shadow-lg hover:shadow-[var(--accent)]/30 transition-all">
+            Get Started Free
           </Link>
           <AuthButton />
         </nav>
