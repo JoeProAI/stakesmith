@@ -10,7 +10,20 @@ const nextConfig = {
     remotePatterns: [{ protocol: 'https', hostname: 'a.espncdn.com' }]
   },
   poweredByHeader: false,
-  reactStrictMode: true
+  reactStrictMode: true,
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default withPWA({
