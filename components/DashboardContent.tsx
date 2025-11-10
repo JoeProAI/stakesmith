@@ -30,6 +30,7 @@ export default function DashboardContent() {
   const [editingStake, setEditingStake] = useState<string | null>(null);
   const [newStake, setNewStake] = useState<string>('');
   const [expandedBlueprint, setExpandedBlueprint] = useState<string | null>(null);
+  const [settling, setSettling] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -247,6 +248,54 @@ export default function DashboardContent() {
     }
   };
 
+  const settleBets = async () => {
+    if (!user) return;
+    
+    setSettling(true);
+    try {
+      console.log('🔍 Settling pending bets...');
+      
+      const response = await fetch('/api/settle-bets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.uid })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to settle bets');
+      }
+      
+      console.log('✅ Settlement complete:', data);
+      
+      // Reload user data to show updated statuses
+      await loadUserData(user.uid);
+      
+      if (data.settled > 0) {
+        const results = data.results || [];
+        const won = results.filter((r: any) => r.status === 'won').length;
+        const lost = results.filter((r: any) => r.status === 'lost').length;
+        
+        alert(
+          `✅ Settlement Complete!\n\n` +
+          `Settled: ${data.settled} bets\n` +
+          `Won: ${won} ✅\n` +
+          `Lost: ${lost} ❌\n\n` +
+          `${data.pending > 0 ? `Still pending: ${data.pending} (games not finished yet)` : 'All bets settled!'}`
+        );
+      } else {
+        alert(`ℹ️ ${data.message}\n\nNo bets were settled. Games may still be in progress.`);
+      }
+      
+    } catch (error: any) {
+      console.error('Settlement error:', error);
+      alert(`❌ Settlement Failed\n\n${error.message}\n\nCheck console for details.`);
+    } finally {
+      setSettling(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -322,9 +371,20 @@ export default function DashboardContent() {
       <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">Saved Blueprints</h3>
-          <button className="text-sm bg-[var(--accent)] px-4 py-2 rounded">
-            + New Blueprint
-          </button>
+          <div className="flex gap-2">
+            {blueprints.filter(b => b.status === 'pending').length > 0 && (
+              <button
+                onClick={settleBets}
+                disabled={settling}
+                className="text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded transition-colors"
+              >
+                {settling ? '🔄 Settling...' : '✅ Settle Bets'}
+              </button>
+            )}
+            <button className="text-sm bg-[var(--accent)] px-4 py-2 rounded">
+              + New Blueprint
+            </button>
+          </div>
         </div>
 
         {blueprints.length === 0 ? (
